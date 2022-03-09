@@ -13,6 +13,10 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ## Warning
 ***NOT INTENDED FOR ANY COMMERCIAL USE***
 
+## Demo
+![scriptExample](https://user-images.githubusercontent.com/12111913/157550594-e9bcbc86-1dd9-41a8-95d9-6dc47d6b0984.gif)
+
+
 ## Usage
 ### Pre-requisite:
 - Python3.8+
