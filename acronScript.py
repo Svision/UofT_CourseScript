@@ -3,6 +3,7 @@ import random
 import time
 from datetime import datetime
 
+import selenium.common.exceptions
 from seleniumrequests import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -13,12 +14,13 @@ UTORID = "<utorid>"
 PASSWORD = "<password>"
 
 TARGET_COURSE_CODE = "<course_code>"  # example for CSC108 in UTSG: "CSC108H1"
-TARGET_SESSION_CODE = "<session_code>"  # example for summer: "20225"
+TARGET_SESSION_CODE = "<session_code>"  # example for 2022 Summer: "20225", options are "yyyym" where m can be one of 1, 5, 9
+TARGET_SECTION_CODE = "<section_code>"  # example for Full Session: "Y", options are "Y", "F", "S"
 
-WAIT_TIME = 60  # Tune the value as needed to pass reCAPTCHA
-# https://acorn.utoronto.ca/sws/rest/enrolment/course/view?acpDuration=1&courseCode=CSC108H1&courseSessionCode=20225&designationCode1=PGM&levelOfInstruction=U&postAcpDuration=2&postCode=ASCRSHBSC&postDescription=A%26S+Bachelor%27s+Degree+Program&primaryOrgCode=ARTSC&sectionCode=Y&sessionCode=20225
-COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?acpDuration=1&courseCode={courseCode}&courseSessionCode={sessionCode}&designationCode1=PGM&levelOfInstruction=U&postAcpDuration=2&postCode=ASCRSHBSC&postDescription=A%26S+Bachelor%27s+Degree+Program&primaryOrgCode=ARTSC&sectionCode=Y&sessionCode={sessionCode}"
-ENROLL_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/modify"
+WAIT_TIME = 60  # Tune the value as needed to bypass reCAPTCHA
+RETRY_LIMIT = 20
+COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?acpDuration=1&courseCode={courseCode}&courseSessionCode={sessionCode}&designationCode1=PGM&levelOfInstruction=U&postAcpDuration=2&postCode=ASCRSHBSC&postDescription=A%26S+Bachelor%27s+Degree+Program&primaryOrgCode=ARTSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
+COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
 ENROLL_STATUS = False
 
 driver = Chrome(ChromeDriverManager().install())
@@ -49,61 +51,39 @@ def login():
 
 
 def enroll_course(sectionNo):
-    print(f"ENROLLING in section: {sectionNo}...")
-    post_json = {
-        "activeCourse": {
-            "course": {
-                "code": TARGET_COURSE_CODE,
-                "sessionCode": TARGET_SESSION_CODE,
-                "sectionCode": "Y",
-                "primaryTeachMethod": "LEC",
-                "enroled": False
-            },
-            "lecture": {
-                "sectionNo": f"LEC,{sectionNo}"
-            },
-            "tutorial": {
+    # find tab
+    course_session_url = COURSE_SESSION_URL.format(index=1)  # Currently, have Fall/Winter and Summer session tabs
+    driver.get(course_session_url)
+    search = driver.find_element(By.ID, value="typeaheadInput")
+    search.send_keys(TARGET_COURSE_CODE)
+    time.sleep(random.randint(1, 3))
 
-            },
-            "practical": {
+    # find course
+    course_span = driver.find_element(By.XPATH, value=f"//span[contains(text(), '{TARGET_COURSE_CODE} {TARGET_SECTION_CODE}')]")
+    course_span.click()
+    time.sleep(random.randint(1, 3))
 
-            }
-        },
-        "eligRegParams": {
-            "postCode": "ASCRSHBSC",
-            "postDescription": "A&S Bachelor's Degree Program",
-            "sessionCode": "20225",
-            "sessionDescription": "2022 Summer",
-            "status": "INVIT",
-            "assocOrgCode": "UC",
-            "acpDuration": "1",
-            "levelOfInstruction": "U",
-            "typeOfProgram": "BACS",
-            "subjectCode1": "SCN",
-            "designationCode1": "PGM",
-            "primaryOrgCode": "ARTSC",
-            "secondaryOrgCode": "",
-            "collaborativeOrgCode": "",
-            "adminOrgCode": "ARTSC",
-            "coSecondaryOrgCode": "",
-            "yearOfStudy": "4",
-            "postAcpDuration": "2",
-            "useSws": "Y"
-        }
-    }
-    post_json = json.loads(json.dumps(post_json))
-    print(post_json)
-    response = driver.request('POST', ENROLL_URL, json=post_json)
-    if response.status_code:
-        print(f"Enroll failed with status code: {response.status_code}, retrying...")
-    else:
+    # choose section
+    course_section = driver.find_element(By.ID, value=f"courseLEC{sectionNo}")
+    course_section.click()
+
+    # enroll
+    enroll_btn = driver.find_element(By.ID, value="enrol")
+    enroll_btn.click()
+    time.sleep(random.randint(2, 4))
+
+    # check enrollment
+    try:
+        driver.find_element(By.ID, f"{TARGET_COURSE_CODE}-courseBox")
         global ENROLL_STATUS
         ENROLL_STATUS = True
-        print("Enroll SUCCESS!")
+        print("Enrollment SUCCESS!")
+    except selenium.common.exceptions.NoSuchElementException:
+        print("Enroll failed, retrying...")
 
 
 def get_course_info():
-    course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sessionCode=TARGET_SESSION_CODE)
+    course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE, sessionCode=TARGET_SESSION_CODE)
     driver.get(course_url)
     content = driver.find_element(By.TAG_NAME, value="pre").text
     data = json.loads(content)
@@ -136,7 +116,7 @@ if __name__ == "__main__":
 
     print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
     retry_count = 0
-    while retry_count < 5:
+    while retry_count < RETRY_LIMIT:
         get_course_info()
         if ENROLL_STATUS is True:
             break
