@@ -11,11 +11,16 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ***This script is intended solely to provide a more fair and secure environment for UofT students' course enrollment.***
 
 ## Warning
-***NOT INTENDED FOR COMMERCIAL USE***
+***NOT INTENDED FOR ANY COMMERCIAL USE***
 
 ## Usage
+### Pre-requisite:
+- Python3.8+
+- `pip3 install selenium`
+- `pip3 install selenium-requests`
+- `pip3 install webdriver-manager`
 #### For Non-developers (Time: 5min):
-The only lines to change in acronScript.py are in angle brackets `<>` (need to remove the brackets too), the naming are self-explanatory.
+The only lines to change for acronScript.py are in angle brackets `<>` (need to remove the brackets too), the naming are self-explanatory.
 ```
 UTORID = "<utorid>"
 PASSWORD = "<password>"
@@ -26,8 +31,10 @@ TARGET_SECTION_CODE = "<section_code>"  # example for Full Session: "Y", options
 ```
 ***After changing the acronScript.py, open 'terminal' and cd to this script directory***\
 ***run `python3 acronScript.py`***
-> NOTE: Please refer to this video if you do not know how to change directory (cd) in terminal: https://www.youtube.com/watch?v=1rUFqkRQkok
+> Please refer to this video if you do not know how to change directory (cd) in terminal: https://www.youtube.com/watch?v=1rUFqkRQkok
 >> OR find kind CS students or developers to help you :)
+
+> NOTE: If any package is missing please install the packages by running pre-requiste three `pip3 install ...` command one-by-one.
 ##### Example:
 ```
 UTORID = "songcha8"
