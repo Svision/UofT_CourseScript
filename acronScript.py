@@ -14,7 +14,7 @@ UTORID = "<utorid>"
 PASSWORD = "<password>"
 
 TARGET_COURSE_CODE = "<course_code>"  # example for CSC108 in UTSG: "CSC108H1"
-TARGET_SESSION_CODE = "<session_code>"  # example for 2022 Summer: "20225", options are "yyyym" where m can be one of 1, 5, 9
+TARGET_SESSION_CODE = "<session_code>"  # example for 2022 Fall: "20229", options are "yyyym" where m can be one of 1, 5, 9
 TARGET_SECTION_CODE = "<section_code>"  # example for Full Session: "Y", options are "Y", "F", "S"
 
 WAIT_TIME = 60  # Tune the value as needed to bypass reCAPTCHA
@@ -52,7 +52,7 @@ def login():
 
 def enroll_course(sectionNo):
     # find tab
-    course_session_url = COURSE_SESSION_URL.format(index=1)  # Currently, have Fall/Winter and Summer session tabs
+    course_session_url = COURSE_SESSION_URL.format(index=0)  # Currently, only have Fall/Winter session tabs (Change to 1 if for Summer session tab)
     driver.get(course_session_url)
     search = driver.find_element(By.ID, value="typeaheadInput")
     search.send_keys(TARGET_COURSE_CODE)
