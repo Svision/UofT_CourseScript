@@ -9,21 +9,25 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 from webdriver_manager.chrome import ChromeDriverManager
+from tkinter import *
+from tkinter import messagebox
+from tkinter.ttk import *
 
-UTORID = "<utorid>"
-PASSWORD = "<password>"
+UTORID = ""
+PASSWORD = ""
 
-TARGET_COURSE_CODE = "<course_code>"  # example for CSC108 in UTSG: "CSC108H1"
-TARGET_SESSION_CODE = "<session_code>"  # example for 2022 Fall: "20229", options are "yyyym" where m can be one of 1, 5, 9
-TARGET_SECTION_CODE = "<section_code>"  # example for Full Session: "Y", options are "Y", "F", "S"
+TARGET_COURSE_CODE = ""  # example for CSC108 in UTSG: "CSC108H1"
+TARGET_SESSION_CODE = "20229"  # example for 2022 Summer: "20225", options are "yyyym" where m can be one of 1, 5, 9
+TARGET_SECTION_CODE = ""  # example for Full Session: "Y", options are "Y", "F", "S"
 
+ERRNO = -1
 WAIT_TIME = 60  # Tune the value as needed to bypass reCAPTCHA
 RETRY_LIMIT = 20
 COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?acpDuration=1&courseCode={courseCode}&courseSessionCode={sessionCode}&designationCode1=PGM&levelOfInstruction=U&postAcpDuration=2&postCode=ASCRSHBSC&postDescription=A%26S+Bachelor%27s+Degree+Program&primaryOrgCode=ARTSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
 ENROLL_STATUS = False
 
-driver = Chrome(ChromeDriverManager().install())
+driver = None
 
 
 def login():
@@ -52,7 +56,7 @@ def login():
 
 def enroll_course(sectionNo):
     # find tab
-    course_session_url = COURSE_SESSION_URL.format(index=0)  # Currently, only have Fall/Winter session tabs (Change to 1 if for Summer session tab)
+    course_session_url = COURSE_SESSION_URL.format(index=0)  # Currently, have Fall/Winter and Summer session tabs
     driver.get(course_session_url)
     search = driver.find_element(By.ID, value="typeaheadInput")
     search.send_keys(TARGET_COURSE_CODE)
@@ -84,6 +88,7 @@ def enroll_course(sectionNo):
 
 def get_course_info():
     course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE, sessionCode=TARGET_SESSION_CODE)
+    print(course_url)
     driver.get(course_url)
     content = driver.find_element(By.TAG_NAME, value="pre").text
     data = json.loads(content)
@@ -111,7 +116,24 @@ def get_course_info():
                 print(f"{TARGET_COURSE_CODE} has no space left for {display_name}")
 
 
-if __name__ == "__main__":
+def submit():
+    global ERRNO
+
+    global UTORID
+    UTORID = utorid_input.get()
+    global PASSWORD
+    PASSWORD = password_input.get()
+    global TARGET_COURSE_CODE
+    TARGET_COURSE_CODE = coursecode_input.get()
+    if not TARGET_COURSE_CODE[-2].isalpha():
+        messagebox.showerror("Course Code Error", "Example for CSC108 in UTSG: 'CSC108H1'")
+        return
+    global TARGET_SECTION_CODE
+    TARGET_SECTION_CODE = selected_section.get()
+    window.quit()
+
+    global driver
+    driver = Chrome(ChromeDriverManager().install())
     login()
 
     print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
@@ -122,3 +144,35 @@ if __name__ == "__main__":
             break
         time.sleep(WAIT_TIME)
         retry_count += 1
+
+
+if __name__ == "__main__":
+    window = Tk()
+    window.eval('tk::PlaceWindow . center')
+    window.geometry('350x200')
+    window.title("UofT Acron Course Enrollment Helper")
+    Label(window, text="Utorid:").grid(column=0, row=0)
+    utorid_input = Entry(window, width=10)
+    utorid_input.grid(column=1, row=0)
+
+    Label(window, text="Password:").grid(column=0, row=1)
+    password_input = Entry(window, width=10, show='*')
+    password_input.grid(column=1, row=1)
+
+    Label(window, text="Course Code:").grid(column=0, row=2)
+    coursecode_input = Entry(window, width=10)
+    coursecode_input.insert(END, 'CSC108H1')
+    coursecode_input.grid(column=1, row=2)
+
+    Label(window, text="Session Code:").grid(column=0, row=3)
+    selected_section = StringVar(None, "F")
+    rad1 = Radiobutton(window, text='F', value="F", variable=selected_section)
+    rad2 = Radiobutton(window, text='S', value="S", variable=selected_section)
+    rad3 = Radiobutton(window, text='Y', value="Y", variable=selected_section)
+    rad1.grid(column=1, row=3)
+    rad2.grid(column=1, row=4)
+    rad3.grid(column=1, row=5)
+
+    btn = Button(window, text="Submit", command=submit)
+    btn.grid(column=1, row=8)
+    window.mainloop()
