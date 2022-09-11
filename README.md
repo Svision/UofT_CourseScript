@@ -20,6 +20,9 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ## Usage
 ### Pre-requisite:
 - Python3.8+
+
+- `pip3 install -r /path/to/requirements.txt`
+- OR
 - `pip3 install selenium`
 - `pip3 install selenium-requests`
 - `pip3 install webdriver-manager`
