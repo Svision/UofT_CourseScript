@@ -12,6 +12,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 from tkinter import *
 from tkinter import messagebox
 from tkinter.ttk import *
+from helper import *
+from PIL import ImageTk, Image
 
 UTORID = ""
 PASSWORD = ""
@@ -19,6 +21,10 @@ PASSWORD = ""
 TARGET_COURSE_CODE = ""  # example for CSC108 in UTSG: "CSC108H1"
 TARGET_SESSION_CODE = "20229"  # example for 2022 Summer: "20225", options are "yyyym" where m can be one of 1, 5, 9
 TARGET_SECTION_CODE = ""  # example for Full Session: "Y", options are "Y", "F", "S"
+
+# Extension
+TARGET_COURSE_SECTION = ""
+TARGET_TUT_SECTION = ""
 
 ERRNO = -1
 WAIT_TIME = 60  # Tune the value as needed to bypass reCAPTCHA
@@ -88,7 +94,6 @@ def enroll_course(sectionNo):
 
 def get_course_info():
     course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE, sessionCode=TARGET_SESSION_CODE)
-    print(course_url)
     driver.get(course_url)
     content = driver.find_element(By.TAG_NAME, value="pre").text
     data = json.loads(content)
@@ -120,13 +125,16 @@ def submit():
     global ERRNO
 
     global UTORID
-    UTORID = utorid_input.get()
+    UTORID = fields['utorid'].get()
     global PASSWORD
-    PASSWORD = password_input.get()
+    PASSWORD = fields['password'].get()
+    if UTORID == "" or PASSWORD == "":
+        messagebox.showerror("Auth Error", "Both utorid and password cannot be empty")
+        return
     global TARGET_COURSE_CODE
-    TARGET_COURSE_CODE = coursecode_input.get()
-    if not TARGET_COURSE_CODE[-2].isalpha():
-        messagebox.showerror("Course Code Error", "Example for CSC108 in UTSG: 'CSC108H1'")
+    TARGET_COURSE_CODE = fields['course_code'].get()
+    if not len(TARGET_COURSE_CODE) == 8:
+        messagebox.showerror("Course Code Error", "Example course code for CSC108 in UTSG: \n\nCSC108H1")
         return
     global TARGET_SECTION_CODE
     TARGET_SECTION_CODE = selected_section.get()
@@ -149,30 +157,37 @@ def submit():
 if __name__ == "__main__":
     window = Tk()
     window.eval('tk::PlaceWindow . center')
-    window.geometry('350x200')
-    window.title("UofT Acron Course Enrollment Helper")
-    Label(window, text="Utorid:").grid(column=0, row=0)
-    utorid_input = Entry(window, width=10)
-    utorid_input.grid(column=1, row=0)
+    window.geometry('280x400')
+    window.title("Acron Enrollment Helper")
+    img = ImageTk.PhotoImage(Image.open("U-of-T-logo.png"))
+    logo = Label(window, image=img)
+    logo.pack()
 
-    Label(window, text="Password:").grid(column=0, row=1)
-    password_input = Entry(window, width=10, show='*')
-    password_input.grid(column=1, row=1)
+    fields = {}
+    fields['utorid_label'] = Label(window, text="Utorid:")
+    fields['utorid'] = Entry(window, width=10)
 
-    Label(window, text="Course Code:").grid(column=0, row=2)
-    coursecode_input = Entry(window, width=10)
-    coursecode_input.insert(END, 'CSC108H1')
-    coursecode_input.grid(column=1, row=2)
+    fields['password_label'] = Label(window, text="Password:")
+    fields['password'] = Entry(window, width=10, show='*')
 
-    Label(window, text="Session Code:").grid(column=0, row=3)
+    fields['course_code_label'] = Label(window, text="Course Code:")
+    fields['course_code'] = EntryWithPlaceholder(window, 'CSC108H1', width=10)
+
+    fields['session_code_label'] = Label(window, text="Session Code:")
+    fields['session_code_rads'] = Frame(window)
     selected_section = StringVar(None, "F")
-    rad1 = Radiobutton(window, text='F', value="F", variable=selected_section)
-    rad2 = Radiobutton(window, text='S', value="S", variable=selected_section)
-    rad3 = Radiobutton(window, text='Y', value="Y", variable=selected_section)
-    rad1.grid(column=1, row=3)
-    rad2.grid(column=1, row=4)
-    rad3.grid(column=1, row=5)
+    rads = [
+        Radiobutton(fields['session_code_rads'], text='F', value="F", variable=selected_section),
+        Radiobutton(fields['session_code_rads'], text='S', value="S", variable=selected_section),
+        Radiobutton(fields['session_code_rads'], text='Y', value="Y", variable=selected_section)
+    ]
 
-    btn = Button(window, text="Submit", command=submit)
-    btn.grid(column=1, row=8)
+    for field in fields:
+        fields[field].pack(anchor=W, padx=10, pady=5, fill=X)
+    for rad in rads:
+        rad.pack(expand=True, side=LEFT)
+
+    fields['submit'] = Button(window, text="Submit", command=submit)
+    fields['submit'].pack()
+
     window.mainloop()
