@@ -65,7 +65,7 @@ def enroll_modify(sectionNo):
     type = "LEC" if not MODIFY_TUT_MODE else "TUT"
     course_session_url = COURSE_SESSION_URL.format(index=0)  # Currently, have Fall/Winter and Summer session tabs
     driver.get(course_session_url)
-    search = driver.find_element(By.ID, "typeaheadInput")
+    search = Wait(driver, 10).until(EC.element_to_be_clickable((By.ID, "typeaheadInput")))
     search.send_keys(TARGET_COURSE_CODE)
     time.sleep(random.randint(1, 3))
 
@@ -151,7 +151,7 @@ def submit():
         return
     global TARGET_SECTION_CODE
     TARGET_SECTION_CODE = selected_section.get()
-    window.quit()
+
 
     try:
         global driver
@@ -209,7 +209,8 @@ if __name__ == "__main__":
             MODIFY_TUT_MODE = False
         else:
             fields['tut_toggle'].config(text='ON')
-            messagebox.showinfo("TUT Example", "TUT sections example (no space):\n\n1001,1002")
+            messagebox.showinfo("TUT Example", "TUT sections example (only valid if you already enrolled the course) "
+                                               "\nNO SPACE:\n\n1001,1002")
             MODIFY_TUT_MODE = True
 
     fields['tut_toggle'] = Button(text="OFF", width=10, command=toggle)
