@@ -28,8 +28,7 @@ MODIFY_TUT_MODE = False
 TARGET_TUT_SECTION_CODES = []  # TUT ["1001", "1002"]
 
 ERRNO = -1
-WAIT_TIME = 60  # Tune the value as needed to bypass reCAPTCHA
-RETRY_LIMIT = 20
+WAIT_TIME = 15  # Tune the value as needed to bypass reCAPTCHA
 COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?acpDuration=1&courseCode={courseCode}&courseSessionCode={sessionCode}&designationCode1=PGM&levelOfInstruction=U&postAcpDuration=2&postCode=ASCRSHBSC&postDescription=A%26S+Bachelor%27s+Degree+Program&primaryOrgCode=ARTSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
 ENROLL_STATUS = False
@@ -157,13 +156,11 @@ def submit():
     login()
 
     print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
-    retry_count = 0
-    while retry_count < RETRY_LIMIT:
+    while True:
         get_course_info()
         if ENROLL_STATUS is True:
             break
         time.sleep(WAIT_TIME)
-        retry_count += 1
 
 
 if __name__ == "__main__":
@@ -199,7 +196,7 @@ if __name__ == "__main__":
     fields['tut'] = EntryWithPlaceholder(window, "Enter TUT sections separate by ','", width=10)
 
     fields['wait_time_label'] = Label(window, text="Wait time:")
-    fields['wait_time'] = EntryWithPlaceholder(window, '60', width=10)
+    fields['wait_time'] = EntryWithPlaceholder(window, '15', width=10)
 
     fields['session_code_label'] = Label(window, text="Session Code:")
     fields['session_code_rads'] = Frame(window)
