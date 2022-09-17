@@ -136,6 +136,8 @@ def submit():
     if MODIFY_TUT_MODE:
         global TARGET_TUT_SECTION_CODES
         TARGET_TUT_SECTION_CODES = fields['tut'].get().split(',')
+    global TARGET_SESSION_CODE
+    TARGET_SESSION_CODE = session_code.get()
 
     global WAIT_TIME
     if not fields['wait_time'].get().isnumeric() and int(fields['wait_time'].get()) <= 0:
@@ -151,16 +153,21 @@ def submit():
     TARGET_SECTION_CODE = selected_section.get()
     window.quit()
 
-    global driver
-    driver = Chrome(ChromeDriverManager().install())
-    login()
+    try:
+        global driver
+        driver = Chrome(ChromeDriverManager().install())
+        login()
 
-    print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
-    while True:
-        get_course_info()
-        if ENROLL_STATUS is True:
-            break
-        time.sleep(WAIT_TIME)
+        print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
+        while True:
+            get_course_info()
+            if ENROLL_STATUS is True:
+                break
+            time.sleep(WAIT_TIME)
+    except Exception as e:
+        print(str(e))
+        print("Retrying...")
+        submit()
 
 
 if __name__ == "__main__":
@@ -176,6 +183,19 @@ if __name__ == "__main__":
 
     fields['password_label'] = Label(window, text="Password:")
     fields['password'] = Entry(window, width=10, show='*')
+
+    fields['session_code_label'] = Label(window, text="Session Code:")
+    session_code_options = []
+    if 8 <= datetime.today().month <= 12:
+        session_code_options.append(f'{datetime.today().year}9')
+        session_code_options.append(f'{datetime.today().year + 1}1')
+    elif 1 <= datetime.today().month <= 3:
+        session_code_options.append(f'{datetime.today().year}1')
+    else:
+        session_code_options.append(f'{datetime.today().year}5')
+    session_code = StringVar(None, session_code_options[0])
+    fields['session_code'] = Combobox(window, values=session_code_options, state="readonly")
+    fields['session_code'].current(0)
 
     fields['course_code_label'] = Label(window, text="Course Code:")
     fields['course_code'] = EntryWithPlaceholder(window, 'CSC108H1', width=10)
@@ -198,13 +218,13 @@ if __name__ == "__main__":
     fields['wait_time_label'] = Label(window, text="Wait time:")
     fields['wait_time'] = EntryWithPlaceholder(window, '15', width=10)
 
-    fields['session_code_label'] = Label(window, text="Session Code:")
-    fields['session_code_rads'] = Frame(window)
+    fields['course_session_code_label'] = Label(window, text="Course Session Code:")
+    fields['course_session_code_rads'] = Frame(window)
     selected_section = StringVar(None, "F")
     rads = [
-        Radiobutton(fields['session_code_rads'], text='F', value="F", variable=selected_section),
-        Radiobutton(fields['session_code_rads'], text='S', value="S", variable=selected_section),
-        Radiobutton(fields['session_code_rads'], text='Y', value="Y", variable=selected_section)
+        Radiobutton(fields['course_session_code_rads'], text='F', value="F", variable=selected_section),
+        Radiobutton(fields['course_session_code_rads'], text='S', value="S", variable=selected_section),
+        Radiobutton(fields['course_session_code_rads'], text='Y', value="Y", variable=selected_section)
     ]
 
     for field in fields:
