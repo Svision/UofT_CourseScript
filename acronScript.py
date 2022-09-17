@@ -24,7 +24,8 @@ TARGET_SECTION_CODE = ""  # example for Full Session: "Y", options are "Y", "F",
 
 # Extension
 TARGET_COURSE_SECTION = ""
-TARGET_TUT_SECTION = ""
+MODIFY_TUT_MODE = False
+TARGET_TUT_SECTION_CODES = []  # TUT ["1001", "1002"]
 
 ERRNO = -1
 WAIT_TIME = 60  # Tune the value as needed to bypass reCAPTCHA
@@ -60,11 +61,12 @@ def login():
     print("Login SUCCESS!\n")
 
 
-def enroll_course(sectionNo):
+def enroll_modify(sectionNo):
     # find tab
+    type = "LEC" if not MODIFY_TUT_MODE else "TUT"
     course_session_url = COURSE_SESSION_URL.format(index=0)  # Currently, have Fall/Winter and Summer session tabs
     driver.get(course_session_url)
-    search = driver.find_element(By.ID, value="typeaheadInput")
+    search = driver.find_element(By.ID, "typeaheadInput")
     search.send_keys(TARGET_COURSE_CODE)
     time.sleep(random.randint(1, 3))
 
@@ -74,12 +76,12 @@ def enroll_course(sectionNo):
     time.sleep(random.randint(1, 3))
 
     # choose section
-    course_section = driver.find_element(By.ID, value=f"courseLEC{sectionNo}")
+    course_section = driver.find_element(By.ID, value=f"course{type}{sectionNo}")
     course_section.click()
 
-    # enroll
-    enroll_btn = driver.find_element(By.ID, value="enrol")
-    enroll_btn.click()
+    # modify_enrol
+    modify_enrol_btn = driver.find_element(By.ID, value="enrol" if not MODIFY_TUT_MODE else "modify")
+    modify_enrol_btn.click()
     time.sleep(random.randint(2, 4))
 
     # check enrollment
@@ -107,14 +109,15 @@ def get_course_info():
     print("----------------------------")
     meetings = data["responseObject"]["meetings"]
     for meeting in meetings:
-        if meeting["teachMethod"] == "LEC":  # check lec or tut
-            space_available = meeting["enrollmentSpaceAvailable"]
-            total_space = meeting["totalSpace"]
-            sectionNo = meeting["sectionNo"]
-            display_name = meeting["displayName"]
+        space_available = meeting["enrollmentSpaceAvailable"]
+        total_space = meeting["totalSpace"]
+        sectionNo = meeting["sectionNo"]
+        display_name = meeting["displayName"]
+        if not MODIFY_TUT_MODE or sectionNo in TARGET_TUT_SECTION_CODES:
             if space_available != 0:
-                print(f"{TARGET_COURSE_CODE} has {space_available} spaces left (total: {total_space}) for {display_name}")
-                enroll_course(sectionNo)
+                print(
+                    f"{TARGET_COURSE_CODE} has {space_available} spaces left (total: {total_space}) for {display_name}")
+                enroll_modify(sectionNo)
                 if ENROLL_STATUS is True:
                     return
             else:
@@ -131,6 +134,15 @@ def submit():
     if UTORID == "" or PASSWORD == "":
         messagebox.showerror("Auth Error", "Both utorid and password cannot be empty")
         return
+    if MODIFY_TUT_MODE:
+        global TARGET_TUT_SECTION_CODES
+        TARGET_TUT_SECTION_CODES = fields['tut'].get().split(',')
+
+    global WAIT_TIME
+    if not fields['wait_time'].get().isnumeric() and int(fields['wait_time'].get()) <= 0:
+        messagebox.showerror("Wait Time Error", "Wait time must be a number greater than 0")
+        return
+    WAIT_TIME = int(fields['wait_time'].get())
     global TARGET_COURSE_CODE
     TARGET_COURSE_CODE = fields['course_code'].get()
     if not len(TARGET_COURSE_CODE) == 8:
@@ -156,8 +168,6 @@ def submit():
 
 if __name__ == "__main__":
     window = Tk()
-    window.eval('tk::PlaceWindow . center')
-    window.geometry('280x400')
     window.title("Acron Enrollment Helper")
     img = ImageTk.PhotoImage(Image.open("U-of-T-logo.png"))
     logo = Label(window, image=img)
@@ -172,6 +182,24 @@ if __name__ == "__main__":
 
     fields['course_code_label'] = Label(window, text="Course Code:")
     fields['course_code'] = EntryWithPlaceholder(window, 'CSC108H1', width=10)
+
+    fields['tut_label'] = Label(window, text="Modify TUT Mode")
+
+    def toggle():
+        global MODIFY_TUT_MODE
+        if fields['tut_toggle'].config('text')[-1] == 'ON':
+            fields['tut_toggle'].config(text='OFF')
+            MODIFY_TUT_MODE = False
+        else:
+            fields['tut_toggle'].config(text='ON')
+            messagebox.showinfo("TUT Example", "TUT sections example (no space):\n\n1001,1002")
+            MODIFY_TUT_MODE = True
+
+    fields['tut_toggle'] = Button(text="OFF", width=10, command=toggle)
+    fields['tut'] = EntryWithPlaceholder(window, "Enter TUT sections separate by ','", width=10)
+
+    fields['wait_time_label'] = Label(window, text="Wait time:")
+    fields['wait_time'] = EntryWithPlaceholder(window, '60', width=10)
 
     fields['session_code_label'] = Label(window, text="Session Code:")
     fields['session_code_rads'] = Frame(window)
@@ -188,6 +216,6 @@ if __name__ == "__main__":
         rad.pack(expand=True, side=LEFT)
 
     fields['submit'] = Button(window, text="Submit", command=submit)
-    fields['submit'].pack()
+    fields['submit'].pack(side=BOTTOM)
 
     window.mainloop()
