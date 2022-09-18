@@ -32,6 +32,7 @@ WAIT_TIME = 15  # Tune the value as needed to bypass reCAPTCHA
 COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?acpDuration=1&courseCode={courseCode}&courseSessionCode={sessionCode}&designationCode1=PGM&levelOfInstruction=U&postAcpDuration=2&postCode=ASCRSHBSC&postDescription=A%26S+Bachelor%27s+Degree+Program&primaryOrgCode=ARTSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
 ENROLL_STATUS = False
+RETRY_TIME = 5
 
 driver = None
 
@@ -126,7 +127,7 @@ def get_course_info():
 
 def submit():
     global ERRNO
-
+    global RETRY_TIME
     global UTORID
     UTORID = fields['utorid'].get()
     global PASSWORD
@@ -167,8 +168,12 @@ def submit():
             time.sleep(WAIT_TIME)
     except Exception as e:
         print(str(e))
-        print("Retrying...")
-        submit()
+        if RETRY_TIME > 0:
+            print("Retrying...")
+            RETRY_TIME -= 1
+            submit()
+        else:
+            exit(1)
 
 
 if __name__ == "__main__":
