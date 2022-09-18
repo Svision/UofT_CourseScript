@@ -108,11 +108,12 @@ def get_course_info():
     print("----------------------------")
     meetings = data["responseObject"]["meetings"]
     for meeting in meetings:
+        teachMethod = meeting["teachMethod"]
         space_available = meeting["enrollmentSpaceAvailable"]
         total_space = meeting["totalSpace"]
         sectionNo = meeting["sectionNo"]
         display_name = meeting["displayName"]
-        if not MODIFY_TUT_MODE or sectionNo in TARGET_TUT_SECTION_CODES:
+        if (not MODIFY_TUT_MODE and teachMethod == "LEC") or (teachMethod == "TUT" and sectionNo in TARGET_TUT_SECTION_CODES):
             if space_available != 0:
                 print(
                     f"{TARGET_COURSE_CODE} has {space_available} spaces left (total: {total_space}) for {display_name}")
