@@ -28,7 +28,7 @@ MODIFY_TUT_MODE = False
 TARGET_TUT_SECTION_CODES = []  # TUT ["1001", "1002"]
 
 ERRNO = -1
-WAIT_TIME = 15  # Tune the value as needed to bypass reCAPTCHA
+WAIT_TIME = 5  # Tune the value as needed to bypass reCAPTCHA
 ACORN_URL = "https://acorn.utoronto.ca/sws/#/"
 COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?courseCode={courseCode}&courseSessionCode={sessionCode}&postCode=ASCRSHBSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
@@ -59,17 +59,19 @@ def login():
     time.sleep(random.randint(1, 2))
 
     # Check login status
-    try:
+    Wait(driver, 10).until(AnyEc(
+        EC.url_to_be(ACORN_URL),
+        EC.url_to_be(reCAPTCHA_URL)
+    ))
+
+    if driver.current_url == reCAPTCHA_URL:
+        print("Waiting manually bypass reCAPTCHA...")
+        driver.switch_to.window(driver.current_window_handle)
+        Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
+        print("Bypass SUCCESS!")
+    else:
         Wait(driver, 10).until(EC.url_to_be(ACORN_URL))
         print("Login SUCCESS!\n")
-        return True
-    except Exception as e:
-        if driver.current_url == reCAPTCHA_URL:
-            print("Waiting manually bypass reCAPTCHA...")
-            Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
-            print("Bypass SUCCESS!")
-            return True
-
 
 
 def enroll_modify(sectionNo):
@@ -110,6 +112,7 @@ def get_course_info():
     course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE,
                                    sessionCode=TARGET_SESSION_CODE)
     driver.get(course_url)
+    Wait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "pre")))
     content = driver.find_element(By.TAG_NAME, value="pre").text
     data = json.loads(content)
 
@@ -234,7 +237,7 @@ if __name__ == "__main__":
     fields['tut'] = EntryWithPlaceholder(window, "Enter TUT sections separate by ','", width=10)
 
     fields['wait_time_label'] = Label(window, text="Wait time:")
-    fields['wait_time'] = EntryWithPlaceholder(window, '15', width=10)
+    fields['wait_time'] = EntryWithPlaceholder(window, '5', width=10)
 
     fields['course_session_code_label'] = Label(window, text="Course Session Code:")
     fields['course_session_code_rads'] = Frame(window)
