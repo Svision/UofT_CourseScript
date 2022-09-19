@@ -104,6 +104,7 @@ def enroll_modify(sectionNo):
         global ENROLL_STATUS
         ENROLL_STATUS = True
         print("Enrollment SUCCESS!")
+        messagebox.showinfo("Donation", "Please consider donation!")
     except selenium.common.exceptions.NoSuchElementException:
         print("Enroll failed, retrying...")
 
@@ -196,9 +197,12 @@ def submit():
 if __name__ == "__main__":
     window = Tk()
     window.title("Acron Enrollment Helper")
-    img = ImageTk.PhotoImage(Image.open("U-of-T-logo.png"))
-    logo = Label(window, image=img)
-    logo.pack()
+    try:
+        img = ImageTk.PhotoImage(Image.open("U-of-T-logo.png"))
+        logo = Label(window, image=img)
+        logo.pack()
+    except:
+        window.geometry('240x530')
 
     fields = {}
     fields['utorid_label'] = Label(window, text="Utorid:")
@@ -236,7 +240,7 @@ if __name__ == "__main__":
     fields['tut_toggle'] = Button(text="OFF", width=10, command=toggle)
     fields['tut'] = EntryWithPlaceholder(window, "Enter TUT sections separate by ','", width=10)
 
-    fields['wait_time_label'] = Label(window, text="Wait time:")
+    fields['wait_time_label'] = Label(window, text="Refresh interval (in sec):")
     fields['wait_time'] = EntryWithPlaceholder(window, '5', width=10)
 
     fields['course_session_code_label'] = Label(window, text="Course Session Code:")
@@ -255,5 +259,8 @@ if __name__ == "__main__":
 
     fields['submit'] = Button(window, text="Submit", command=submit)
     fields['submit'].pack(side=BOTTOM)
+
+    signature = Label(window, text="Made by @Changhao Song")
+    signature.pack()
 
     window.mainloop()
