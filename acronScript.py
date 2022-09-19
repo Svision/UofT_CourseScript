@@ -29,7 +29,8 @@ TARGET_TUT_SECTION_CODES = []  # TUT ["1001", "1002"]
 
 ERRNO = -1
 WAIT_TIME = 15  # Tune the value as needed to bypass reCAPTCHA
-COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?acpDuration=1&courseCode={courseCode}&courseSessionCode={sessionCode}&designationCode1=PGM&levelOfInstruction=U&postAcpDuration=2&postCode=ASCRSHBSC&postDescription=A%26S+Bachelor%27s+Degree+Program&primaryOrgCode=ARTSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
+ACORN_URL = "https://acorn.utoronto.ca/sws/#/"
+COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?courseCode={courseCode}&courseSessionCode={sessionCode}&postCode=ASCRSHBSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
 reCAPTCHA_URL = "https://acorn.utoronto.ca/sws/#/captcha"
 ENROLL_STATUS = False
@@ -39,7 +40,7 @@ driver: Chrome = None
 
 
 def login():
-    driver.get("https://acorn.utoronto.ca/sws/#/")
+    driver.get(ACORN_URL)
     print("Logging in...")
 
     # Input utorid
@@ -57,9 +58,18 @@ def login():
     login_btn.click()
     time.sleep(random.randint(1, 2))
 
-    # Check dashboard present to identify login status
-    Wait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'Dashboard')]")))
-    print("Login SUCCESS!\n")
+    # Check login status
+    try:
+        Wait(driver, 10).until(EC.url_to_be(ACORN_URL))
+        print("Login SUCCESS!\n")
+        return True
+    except Exception as e:
+        if driver.current_url == reCAPTCHA_URL:
+            print("Waiting manually bypass reCAPTCHA...")
+            Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
+            print("Bypass SUCCESS!")
+            return True
+
 
 
 def enroll_modify(sectionNo):
@@ -72,7 +82,8 @@ def enroll_modify(sectionNo):
     time.sleep(random.randint(1, 3))
 
     # find course
-    course_span = driver.find_element(By.XPATH, value=f"//span[contains(text(), '{TARGET_COURSE_CODE} {TARGET_SECTION_CODE}')]")
+    course_span = driver.find_element(By.XPATH,
+                                      value=f"//span[contains(text(), '{TARGET_COURSE_CODE} {TARGET_SECTION_CODE}')]")
     course_span.click()
     time.sleep(random.randint(1, 3))
 
@@ -96,22 +107,9 @@ def enroll_modify(sectionNo):
 
 
 def get_course_info():
-    course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE, sessionCode=TARGET_SESSION_CODE)
+    course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE,
+                                   sessionCode=TARGET_SESSION_CODE)
     driver.get(course_url)
-
-    # MARK: Not working
-    """
-    Wait(driver, 10).until(AnyEc(
-        EC.presence_of_element_located((By.CLASS_NAME, "page-title")),
-        EC.presence_of_element_located((By.TAG_NAME, "pre"))
-    ))
-    if len(driver.find_elements(By.CLASS_NAME, "page-title")) != 0:
-        messagebox.showerror("CAPTCHA", "Please manually bypass reCAPTCHA")
-        print("Please manually bypass reCAPTCHA")
-        Wait(driver, 600).until(EC.url_changes(reCAPTCHA_URL))
-        print("Bypass SUCCESS")
-    """
-
     content = driver.find_element(By.TAG_NAME, value="pre").text
     data = json.loads(content)
 
@@ -129,7 +127,8 @@ def get_course_info():
         total_space = meeting["totalSpace"]
         sectionNo = meeting["sectionNo"]
         display_name = meeting["displayName"]
-        if (not MODIFY_TUT_MODE and teachMethod == "LEC") or (teachMethod == "TUT" and sectionNo in TARGET_TUT_SECTION_CODES):
+        if (not MODIFY_TUT_MODE and teachMethod == "LEC") or (
+                teachMethod == "TUT" and sectionNo in TARGET_TUT_SECTION_CODES):
             if space_available != 0:
                 print(
                     f"{TARGET_COURSE_CODE} has {space_available} spaces left (total: {total_space}) for {display_name}")
@@ -153,8 +152,6 @@ def submit():
     if MODIFY_TUT_MODE:
         global TARGET_TUT_SECTION_CODES
         TARGET_TUT_SECTION_CODES = fields['tut'].get().split(',')
-    global TARGET_SESSION_CODE
-    TARGET_SESSION_CODE = session_code.get()
 
     global WAIT_TIME
     if not fields['wait_time'].get().isnumeric() and int(fields['wait_time'].get()) <= 0:
@@ -168,7 +165,6 @@ def submit():
         return
     global TARGET_SECTION_CODE
     TARGET_SECTION_CODE = selected_section.get()
-
 
     try:
         global driver
@@ -208,23 +204,19 @@ if __name__ == "__main__":
     fields['password_label'] = Label(window, text="Password:")
     fields['password'] = Entry(window, width=10, show='*')
 
-    fields['session_code_label'] = Label(window, text="Session Code:")
-    session_code_options = []
     if 8 <= datetime.today().month <= 12:
-        session_code_options.append(f'{datetime.today().year}9')
-        session_code_options.append(f'{datetime.today().year + 1}1')
+        TARGET_SECTION_CODE = f'{datetime.today().year}9'
     elif 1 <= datetime.today().month <= 3:
-        session_code_options.append(f'{datetime.today().year}1')
+        TARGET_SECTION_CODE = f'{datetime.today().year}1'
     else:
-        session_code_options.append(f'{datetime.today().year}5')
-    session_code = StringVar(None, session_code_options[0])
-    fields['session_code'] = Combobox(window, values=session_code_options, state="readonly")
-    fields['session_code'].current(0)
+        TARGET_SECTION_CODE = f'{datetime.today().year}5'
+    fields['session_code_label'] = Label(window, text=f"Session Code: {TARGET_SECTION_CODE}")
 
     fields['course_code_label'] = Label(window, text="Course Code:")
     fields['course_code'] = EntryWithPlaceholder(window, 'CSC108H1', width=10)
 
     fields['tut_label'] = Label(window, text="Modify TUT Mode")
+
 
     def toggle():
         global MODIFY_TUT_MODE
@@ -236,6 +228,7 @@ if __name__ == "__main__":
             messagebox.showinfo("TUT Example", "TUT sections example (only valid if you already enrolled the course) "
                                                "\nNO SPACE:\n\n1001,1002")
             MODIFY_TUT_MODE = True
+
 
     fields['tut_toggle'] = Button(text="OFF", width=10, command=toggle)
     fields['tut'] = EntryWithPlaceholder(window, "Enter TUT sections separate by ','", width=10)
