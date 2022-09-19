@@ -31,10 +31,11 @@ ERRNO = -1
 WAIT_TIME = 15  # Tune the value as needed to bypass reCAPTCHA
 COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?acpDuration=1&courseCode={courseCode}&courseSessionCode={sessionCode}&designationCode1=PGM&levelOfInstruction=U&postAcpDuration=2&postCode=ASCRSHBSC&postDescription=A%26S+Bachelor%27s+Degree+Program&primaryOrgCode=ARTSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
+reCAPTCHA_URL = "https://acorn.utoronto.ca/sws/#/captcha"
 ENROLL_STATUS = False
 RETRY_TIME = 5
 
-driver = None
+driver: Chrome = None
 
 
 def login():
@@ -97,6 +98,20 @@ def enroll_modify(sectionNo):
 def get_course_info():
     course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE, sessionCode=TARGET_SESSION_CODE)
     driver.get(course_url)
+
+    # MARK: Not working
+    """
+    Wait(driver, 10).until(AnyEc(
+        EC.presence_of_element_located((By.CLASS_NAME, "page-title")),
+        EC.presence_of_element_located((By.TAG_NAME, "pre"))
+    ))
+    if len(driver.find_elements(By.CLASS_NAME, "page-title")) != 0:
+        messagebox.showerror("CAPTCHA", "Please manually bypass reCAPTCHA")
+        print("Please manually bypass reCAPTCHA")
+        Wait(driver, 600).until(EC.url_changes(reCAPTCHA_URL))
+        print("Bypass SUCCESS")
+    """
+
     content = driver.find_element(By.TAG_NAME, value="pre").text
     data = json.loads(content)
 
@@ -164,13 +179,16 @@ def submit():
         while True:
             get_course_info()
             if ENROLL_STATUS is True:
-                break
+                window.destroy()
+                driver.quit()
+                exit(0)
             time.sleep(WAIT_TIME)
     except Exception as e:
         print(str(e))
         if RETRY_TIME > 0:
             print("Retrying...")
             RETRY_TIME -= 1
+            driver.close()
             submit()
         else:
             exit(1)

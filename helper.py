@@ -26,3 +26,21 @@ class EntryWithPlaceholder(tk.Entry):
     def foc_out(self, *args):
         if not self.get():
             self.put_placeholder()
+
+
+class AnyEc:
+    """ Use with WebDriverWait to combine expected_conditions
+        in an OR.
+    """
+    def __init__(self, *args):
+        self.ecs = args
+
+    def __call__(self, driver):
+        for fn in self.ecs:
+            try:
+                res = fn(driver)
+                if res:
+                    return True
+                    # Or return res if you need the element found
+            except:
+                pass
