@@ -3,6 +3,7 @@ import random
 import time
 from datetime import datetime
 
+import webbrowser
 import selenium.common.exceptions
 from seleniumrequests import Chrome
 from selenium.webdriver.common.by import By
@@ -194,6 +195,10 @@ def submit():
             exit(1)
 
 
+def donation():
+    webbrowser.open("https://ko-fi.com/svision")
+
+
 if __name__ == "__main__":
     window = Tk()
     window.title("Acron Enrollment Helper")
@@ -202,7 +207,7 @@ if __name__ == "__main__":
         logo = Label(window, image=img)
         logo.pack()
     except:
-        window.geometry('240x530')
+        window.geometry('240x550')
 
     fields = {}
     fields['utorid_label'] = Label(window, text="Utorid:")
@@ -262,5 +267,8 @@ if __name__ == "__main__":
 
     signature = Label(window, text="Made by @Changhao Song")
     signature.pack()
+
+    donation = Button(window, text="Buy me a coffee ☕️", command=donation)
+    donation.pack()
 
     window.mainloop()
