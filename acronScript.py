@@ -69,6 +69,7 @@ def login():
         print("Waiting manually bypass reCAPTCHA...")
         driver.switch_to.window(driver.current_window_handle)
         Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
+        driver.minimize_window()
         print("Bypass SUCCESS!")
     else:
         Wait(driver, 10).until(EC.url_to_be(ACORN_URL))
@@ -105,7 +106,7 @@ def enroll_modify(sectionNo):
         global ENROLL_STATUS
         ENROLL_STATUS = True
         print("Enrollment SUCCESS!")
-        messagebox.showinfo("Donation", "Please consider donation!")
+        messagebox.showinfo("Donation", "Buy me a coffee https://ko-fi.com/svision")
     except selenium.common.exceptions.NoSuchElementException:
         print("Enroll failed, retrying...")
 
