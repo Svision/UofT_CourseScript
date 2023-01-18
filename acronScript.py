@@ -4,40 +4,47 @@ import time
 from datetime import datetime
 
 import webbrowser
+
+import requests
 import selenium.common.exceptions
-from seleniumrequests import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as Wait
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+import undetected_chromedriver as uc
 from tkinter import *
 from tkinter import messagebox
 from tkinter.ttk import *
 from helper import *
 from PIL import ImageTk, Image
+from twocaptcha import TwoCaptcha
 
 UTORID = ""
 PASSWORD = ""
 
 TARGET_COURSE_CODE = ""  # example for CSC108 in UTSG: "CSC108H1"
-TARGET_SESSION_CODE = "20229"  # example for 2022 Summer: "20225", options are "yyyym" where m can be one of 1, 5, 9
+TARGET_SESSION_CODE = "20231"  # example for 2022 Summer: "20225", options are "yyyym" where m can be one of 1, 5, 9
 TARGET_SECTION_CODE = ""  # example for Full Session: "Y", options are "Y", "F", "S"
 
 # Extension
 TARGET_COURSE_SECTION = ""
 MODIFY_TUT_MODE = False
 TARGET_TUT_SECTION_CODES = []  # TUT ["1001", "1002"]
+API_2CAPTCHA = ""
+SOLVER_2CAPTCHA: TwoCaptcha = None
 
 ERRNO = -1
-WAIT_TIME = 5  # Tune the value as needed to bypass reCAPTCHA
+WAIT_TIME = 5  # Tune the value as needed to bypass hCaptcha
 ACORN_URL = "https://acorn.utoronto.ca/sws/#/"
 COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?courseCode={courseCode}&courseSessionCode={sessionCode}&postCode=ASCRSHBSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
-reCAPTCHA_URL = "https://acorn.utoronto.ca/sws/#/captcha"
+hCaptcha_URL = "https://acorn.utoronto.ca/sws/#/captcha"
 ENROLL_STATUS = False
 RETRY_TIME = 5
 
-driver: Chrome = None
+driver: uc.Chrome = None
+chrome_options = Options()
+chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
 
 def login():
@@ -62,18 +69,50 @@ def login():
     # Check login status
     Wait(driver, 10).until(AnyEc(
         EC.url_to_be(ACORN_URL),
-        EC.url_to_be(reCAPTCHA_URL)
+        EC.url_to_be(hCaptcha_URL)
     ))
 
-    if driver.current_url == reCAPTCHA_URL:
-        print("Waiting manually bypass reCAPTCHA...")
-        driver.switch_to.window(driver.current_window_handle)
+    if driver.current_url == hCaptcha_URL:
+        bypass_hCaptcha()
         Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
         driver.minimize_window()
         print("Bypass SUCCESS!")
     else:
         Wait(driver, 10).until(EC.url_to_be(ACORN_URL))
         print("Login SUCCESS!\n")
+
+
+def bypass_hCaptcha():
+    if SOLVER_2CAPTCHA is None:
+        print("Waiting manually bypass hCaptcha...")
+        driver.switch_to.window(driver.current_window_handle)
+    else:
+        Wait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
+        site_key_element = driver.find_element(By.TAG_NAME, "iframe")
+        site_src = site_key_element.get_attribute("src")
+        start_idx = site_src.index('sitekey=') + 8
+        end_idx = site_src.index('&theme')
+        site_key = site_src[start_idx:end_idx]
+        print('Solving ' + site_key)
+
+        result = SOLVER_2CAPTCHA.hcaptcha(
+            sitekey=site_key,
+            url='https://acorn.utoronto.ca/sws/#/captcha'
+        )
+        print('Captcha solved!')
+        cookies = driver.get_cookies()
+        s = requests.Session()
+        for cookie in cookies:
+            s.cookies.set(cookie['name'], cookie['value'])
+
+        # submit
+        hcaptcha_response = driver.find_element(By.CSS_SELECTOR, value="[data-hcaptcha-response]")
+        driver.execute_script(f"arguments[0].setAttribute('data-hcaptcha-response', '{result['code']}');", hcaptcha_response)
+        response = driver.find_element(By.NAME, value="g-recaptcha-response")
+        response.submit()
+        submit_btn = driver.find_element(By.XPATH, value="//button[@class='btn btn-primary']")
+        submit_btn.click()
+        driver.get(ACORN_URL)
 
 
 def enroll_modify(sectionNo):
@@ -172,9 +211,18 @@ def submit():
     global TARGET_SECTION_CODE
     TARGET_SECTION_CODE = selected_section.get()
 
+    # 2Captcha
+    global API_2CAPTCHA
+    global SOLVER_2CAPTCHA
+    API_2CAPTCHA = fields['2captcha'].get()
+    if API_2CAPTCHA != "":
+        SOLVER_2CAPTCHA = TwoCaptcha(API_2CAPTCHA)
+        print("Solver created!")
+
     try:
         global driver
-        driver = Chrome(ChromeDriverManager().install())
+        driver = uc.Chrome(chrome_options=chrome_options)
+
         login()
 
         print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
@@ -186,13 +234,16 @@ def submit():
                 exit(0)
             time.sleep(WAIT_TIME)
     except Exception as e:
-        print(str(e))
+        if str(e) == "ERROR_WRONG_USER_KEY":
+            print("API Key error")
+            API_2CAPTCHA = ""
         if RETRY_TIME > 0:
+            print(str(e))
             print("Retrying...")
             RETRY_TIME -= 1
-            driver.close()
             submit()
         else:
+            print(str(e))
             exit(1)
 
 
@@ -257,6 +308,9 @@ if __name__ == "__main__":
         Radiobutton(fields['course_session_code_rads'], text='S', value="S", variable=selected_section),
         Radiobutton(fields['course_session_code_rads'], text='Y', value="Y", variable=selected_section)
     ]
+
+    fields['2captcha_label'] = Label(window, text="2Captcha API Key:")
+    fields['2captcha'] = EntryWithPlaceholder(window, 'Enter API to bypass hCaptcha', width=10)
 
     for field in fields:
         fields[field].pack(anchor=W, padx=10, pady=5, fill=X)
