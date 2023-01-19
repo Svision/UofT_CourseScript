@@ -5,6 +5,8 @@ from datetime import datetime
 
 import webbrowser
 
+import sys
+import os
 import requests
 import selenium.common.exceptions
 from selenium.webdriver.common.by import By
@@ -274,12 +276,22 @@ def donation():
 if __name__ == "__main__":
     window = Tk()
     window.title("Acron Enrollment Helper")
+
+    def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
     try:
-        img = ImageTk.PhotoImage(Image.open("U-of-T-logo.png"))
+        img = ImageTk.PhotoImage(Image.open(resource_path("U-of-T-logo.png")))
         logo = Label(window, image=img)
         logo.pack()
     except:
-        window.geometry('240x550')
+        window.geometry('260x620')
 
     fields = {}
     fields['utorid_label'] = Label(window, text="Utorid:")
@@ -344,7 +356,7 @@ if __name__ == "__main__":
     fields['submit'] = Button(window, text="Submit", command=submit)
     fields['submit'].pack(side=BOTTOM)
 
-    signature = Label(window, text="Made by @Changhao Song")
+    signature = Label(window, text="Made by ❤️ @Changhao Song️")
     signature.pack()
 
     donation = Button(window, text="Buy me a coffee ☕️", command=donation)

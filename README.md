@@ -13,10 +13,14 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ## Warning
 ***NOT INTENDED FOR ANY COMMERCIAL USE***
 
-## Usage (Time: 1min)
-### ***For Mac: Open Terminal and Copy & Paste the following command then press Enter***
-### ***For Windows: Direct Download here***
-Use standard `python3` to run
+## Usage 用法 (Time: 1min)
+### ***For Mac:***
+Copy and paste the following command to Terminal.app\
+复制粘贴以下代码到Terminal并回车\
+`curl -L https://github.com/Svision/UofT_CourseScript/releases/download/mac/acronScript_mac > acronScript_mac && chmod +x acronScript_mac && ./acronScript_mac`
+
+### ***For Windows:***
+Use standard `python` to run
 
 ## Future Work
 - ~~Bypass reCAPTCHA~~
