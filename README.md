@@ -14,8 +14,13 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ***NOT INTENDED FOR ANY COMMERCIAL USE***
 
 ## Usage (Time: 1min)
-### ***For Mac: Open Terminal and Copy & Paste the following command then press Enter***
-### ***For Windows: Direct Download here***
+### ***For Mac:***
+- ***Apple Silicon:***
+`curl -L https://github.com/Svision/UofT_CourseScript/releases/download/release/acronScript_mac > acronScript_mac && chmod +x acronScript_mac && ./acronScript_mac`
+- ***Intel Based:***
+Use standard `python3` to run
+
+### ***For Windows:***
 Use standard `python3` to run
 
 ## Future Work
