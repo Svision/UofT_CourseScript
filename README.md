@@ -15,12 +15,9 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 
 ## Usage 用法 (Time: 1min)
 ### ***For Mac:***
-Copy and paste the following command to Terminal.app\
-复制粘贴以下代码到Terminal并回车\
-`curl -L https://github.com/Svision/UofT_CourseScript/releases/download/mac/acronScript_mac > acronScript_mac && chmod +x acronScript_mac && ./acronScript_mac`
-
+Use standard `python3 acronScript.py` to run
 ### ***For Windows:***
-Use standard `python` to run
+Use standard `python3 acronScript.py` to run
 
 ## Future Work
 - ~~Bypass reCAPTCHA~~
