@@ -23,7 +23,7 @@ UTORID = ""
 PASSWORD = ""
 
 TARGET_COURSE_CODE = ""  # example for CSC108 in UTSG: "CSC108H1"
-TARGET_SESSION_CODE = "20231"  # example for 2022 Summer: "20225", options are "yyyym" where m can be one of 1, 5, 9
+TARGET_SESSION_CODE = f"{datetime.now().year}{datetime.now().month}"  # options are "yyyym" m is one of 1, 5, 9
 TARGET_SECTION_CODE = ""  # example for Full Session: "Y", options are "Y", "F", "S"
 
 # Extension
@@ -75,7 +75,6 @@ def login():
     if driver.current_url == hCaptcha_URL:
         bypass_hCaptcha()
         Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
-        driver.minimize_window()
         print("Bypass SUCCESS!")
     else:
         Wait(driver, 10).until(EC.url_to_be(ACORN_URL))
@@ -106,10 +105,28 @@ def bypass_hCaptcha():
             s.cookies.set(cookie['name'], cookie['value'])
 
         # submit
-        hcaptcha_response = driver.find_element(By.CSS_SELECTOR, value="[data-hcaptcha-response]")
-        driver.execute_script(f"arguments[0].setAttribute('data-hcaptcha-response', '{result['code']}');", hcaptcha_response)
-        response = driver.find_element(By.NAME, value="g-recaptcha-response")
-        response.submit()
+        session = requests.Session()
+        cookies = driver.get_cookies()
+        for cookie in cookies:
+            session.cookies.set(cookie['name'], cookie['value'])
+        headers = {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-CA,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+            "content-type": "text/plain",
+            "sec-ch-ua": '\"Not_A Brand\";v=\"99\", \"Google Chrome\";v=\"109\", \"Chromium\";v=\"109\"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "x-xsrf-token": driver.get_cookie('XSRF-TOKEN')['value'],
+            "Referer": "https://acorn.utoronto.ca/sws/",
+            "Referrer-Policy": "strict-origin-when-cross-origin"
+        }
+        body = result['code']
+        verify = session.post("https://acorn.utoronto.ca/sws/rest/captcha/verify", headers=headers, data=body)
+        response = driver.find_element(By.CSS_SELECTOR, value="[data-hcaptcha-response]")
+        driver.execute_script(f"arguments[0].setAttribute('data-hcaptcha-response', '{result['code']}');", response)
         submit_btn = driver.find_element(By.XPATH, value="//button[@class='btn btn-primary']")
         submit_btn.click()
         driver.get(ACORN_URL)
@@ -118,7 +135,10 @@ def bypass_hCaptcha():
 def enroll_modify(sectionNo):
     # find tab
     type = "LEC" if not MODIFY_TUT_MODE else "TUT"
-    course_session_url = COURSE_SESSION_URL.format(index=0)  # Currently, have Fall/Winter and Summer session tabs
+    index = 0
+    if 1 < datetime.now().month < 9:
+        index = 1
+    course_session_url = COURSE_SESSION_URL.format(index=index)  # Currently, have Fall/Winter and Summer session tabs
     driver.get(course_session_url)
     search = Wait(driver, 10).until(EC.element_to_be_clickable((By.ID, "typeaheadInput")))
     search.send_keys(TARGET_COURSE_CODE)
@@ -145,7 +165,7 @@ def enroll_modify(sectionNo):
         global ENROLL_STATUS
         ENROLL_STATUS = True
         print("Enrollment SUCCESS!")
-        messagebox.showinfo("Donation", "Buy me a coffee https://ko-fi.com/svision")
+        messagebox.showinfo("Donation", "SUCCESS! Buy me a coffee ☕️: https://ko-fi.com/svision")
     except selenium.common.exceptions.NoSuchElementException:
         print("Enroll failed, retrying...")
 
@@ -302,7 +322,11 @@ if __name__ == "__main__":
 
     fields['course_session_code_label'] = Label(window, text="Course Session Code:")
     fields['course_session_code_rads'] = Frame(window)
-    selected_section = StringVar(None, "F")
+    if datetime.now().month == 1:
+        section = "S"
+    else:
+        section = "F"
+    selected_section = StringVar(None, section)
     rads = [
         Radiobutton(fields['course_session_code_rads'], text='F', value="F", variable=selected_section),
         Radiobutton(fields['course_session_code_rads'], text='S', value="S", variable=selected_section),

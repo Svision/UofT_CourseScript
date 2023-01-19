@@ -15,12 +15,10 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 
 ## Usage (Time: 1min)
 ### ***For Mac: Open Terminal and Copy & Paste the following command then press Enter***
-`curl -L https://github.com/Svision/UofT_CourseScript/releases/download/v1.0/acronScript_mac > acronScript_mac && chmod +x acronScript_mac && ./acronScript_mac`
-
 ### ***For Windows: Direct Download here***
-https://github.com/Svision/UofT_CourseScript/releases/download/v1.0/acronScript_win.exe
+Use standard `python3` to run
 
 ## Future Work
-- Bypass reCAPTCHA
+- ~~Bypass reCAPTCHA~~
 - Multiple Courses support
 - Specify Course timeslot
