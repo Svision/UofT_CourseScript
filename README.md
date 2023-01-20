@@ -13,10 +13,8 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ## Warning
 ***NOT INTENDED FOR ANY COMMERCIAL USE***
 
-## Usage 用法 (Time: 1min)
-### ***For Mac:***
-Use standard `python3 acronScript.py` to run
-### ***For Windows:***
+## Usage 用法 (Time: 5mins)
+`pip3 install -r requirements.txt`
 Use standard `python3 acronScript.py` to run
 
 ## Future Work
