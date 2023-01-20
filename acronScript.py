@@ -196,7 +196,8 @@ def get_course_info():
         total_space = meeting["totalSpace"]
         sectionNo = meeting["sectionNo"]
         display_name = meeting["displayName"]
-        if (not MODIFY_TUT_MODE and teachMethod == "LEC" and sectionNo in TARGET_LEC_SECTION_CODES) or (
+        if (not MODIFY_TUT_MODE and teachMethod == "LEC" and (TARGET_LEC_SECTION_CODES == [] or
+                                                              sectionNo in TARGET_LEC_SECTION_CODES)) or (
                 teachMethod == "TUT" and sectionNo in TARGET_TUT_SECTION_CODES):
             if space_available != 0:
                 print(
@@ -235,6 +236,7 @@ def submit():
     global TARGET_LEC_SECTION_CODES
     if fields['specify_lec'].get() != "" or fields['specify_lec'].get() != "None":
         TARGET_LEC_SECTION_CODES = fields['specify_lec'].get().split(',')
+        print(TARGET_LEC_SECTION_CODES)
 
     global TARGET_SECTION_CODE
     TARGET_SECTION_CODE = selected_section.get()
