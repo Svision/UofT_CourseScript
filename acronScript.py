@@ -5,8 +5,6 @@ from datetime import datetime
 
 import webbrowser
 
-import sys
-import os
 import requests
 import ssl
 import selenium.common.exceptions
@@ -19,7 +17,6 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter.ttk import *
 from helper import *
-from PIL import ImageTk, Image
 from twocaptcha import TwoCaptcha
 
 UTORID = ""
@@ -75,7 +72,10 @@ def login():
         EC.url_to_be(ACORN_URL),
         EC.url_to_be(hCaptcha_URL)
     ))
+    check_captcha()
 
+
+def check_captcha():
     if driver.current_url == hCaptcha_URL:
         bypass_hCaptcha()
         Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
@@ -90,6 +90,7 @@ def login():
 def bypass_hCaptcha():
     if SOLVER_2CAPTCHA is None:
         print("Waiting manually bypass hCaptcha...")
+        messagebox.showinfo("hCAPTCHA required", "Please enter hCAPTCHA to continue")
         driver.switch_to.window(driver.current_window_handle)
     else:
         Wait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
@@ -236,7 +237,7 @@ def submit():
         messagebox.showerror("Course Code Error", "Example course code for CSC108 in UTSG: \n\nCSC108H1")
         return
     global TARGET_LEC_SECTION_CODES
-    if fields['specify_lec'].get() != "" and fields['specify_lec'].get() != "None":
+    if fields['specify_lec'].get() != "" and fields['specify_lec'].get() != "ALL":
         TARGET_LEC_SECTION_CODES = fields['specify_lec'].get().split(',')
         print(f'Checking LEC {TARGET_LEC_SECTION_CODES}')
 
@@ -252,10 +253,9 @@ def submit():
         SOLVER_2CAPTCHA = TwoCaptcha(API_2CAPTCHA)
         print("Solver created!")
 
+    global driver
+    driver = uc.Chrome(chrome_options=chrome_options)
     try:
-        global driver
-        driver = uc.Chrome(chrome_options=chrome_options)
-
         login()
 
         print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
@@ -273,6 +273,7 @@ def submit():
         if RETRY_TIME > 0:
             print(str(e))
             print("Retrying...")
+            driver.quit()
             RETRY_TIME -= 1
             submit()
         else:
@@ -308,7 +309,7 @@ if __name__ == "__main__":
     fields['course_code'] = EntryWithPlaceholder(window, 'CSC108H1', width=10)
     fields['specify_lec_label'] = Label(window, text="Specify Lec Sections:")
     fields['specify_lec_tip_label'] = Label(window, text="Code only (No 'LEC'), separated by ','")
-    fields['specify_lec'] = EntryWithPlaceholder(window, 'None', width=10)
+    fields['specify_lec'] = EntryWithPlaceholder(window, 'ALL', width=10)
 
     fields['tut_label'] = Label(window, text="Modify TUT Mode")
 
