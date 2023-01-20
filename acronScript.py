@@ -2,6 +2,7 @@ import json
 import random
 import time
 from datetime import datetime
+import os
 
 import webbrowser
 
@@ -291,11 +292,48 @@ if __name__ == "__main__":
     window.title("Acron Enrollment Helper")
 
     fields = {}
+
+    if not os.path.isfile("data.txt"):
+        with open("data.txt", 'w') as my_file:
+            pass
+
     fields['utorid_label'] = Label(window, text="Utorid:")
     fields['utorid'] = Entry(window, width=10)
 
     fields['password_label'] = Label(window, text="Password:")
     fields['password'] = Entry(window, width=10, show='*')
+
+    def load_data():
+        global MODIFY_TUT_MODE
+        with open("data.txt") as f:
+            data = f.readlines()
+            print(data)
+            fields['utorid'].delete(0, END)
+            fields['utorid'].insert(0, data[0].strip())
+            fields['password'].delete(0, END)
+            fields['password'].insert(0, data[1].strip())
+            fields['course_code'].delete(0, END)
+            fields['course_code'].insert(0, data[2].strip())
+            fields['specify_lec'].delete(0, END)
+            fields['specify_lec'].insert(0, data[3].strip())
+            if data[4].strip() == 'True':
+                fields['tut_toggle'].config(text='ON')
+                messagebox.showinfo("TUT Example",
+                                    "TUT sections example (only valid if you already enrolled the course) "
+                                    "\nNO SPACE:\n\n1001,1002")
+                MODIFY_TUT_MODE = True
+            else:
+                fields['tut_toggle'].config(text='OFF')
+                MODIFY_TUT_MODE = False
+            if data[5].strip():
+                fields['tut'].delete(0, END)
+                fields['tut'].insert(0, data[5].strip())
+            fields['wait_time'].delete(0, END)
+            fields['wait_time'].insert(0, data[6].strip())
+            fields['2captcha'].delete(0, END)
+            fields['2captcha'].insert(0, data[7].strip())
+
+    fields['load_data'] = Button(text="LOAD DATA", width=10, command=load_data)
 
     if 8 <= datetime.today().month <= 12:
         TARGET_SECTION_CODE = f'{datetime.today().year}9'
