@@ -284,22 +284,6 @@ if __name__ == "__main__":
     window = Tk()
     window.title("Acron Enrollment Helper")
 
-    def resource_path(relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
-        try:
-            # PyInstaller creates a temp folder and stores path in _MEIPASS
-            base_path = sys._MEIPASS
-        except Exception:
-            base_path = os.path.abspath(".")
-
-        return os.path.join(base_path, relative_path)
-    try:
-        img = ImageTk.PhotoImage(Image.open(resource_path("U-of-T-logo.png")))
-        logo = Label(window, image=img)
-        logo.pack()
-    except:
-        window.geometry('260x620')
-
     fields = {}
     fields['utorid_label'] = Label(window, text="Utorid:")
     fields['utorid'] = Entry(window, width=10)
