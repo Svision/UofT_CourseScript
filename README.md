@@ -13,7 +13,14 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ## Warning
 ***NOT INTENDED FOR ANY COMMERCIAL USE***
 
-## Usage 用法 (Time: 5mins)
+## Usage 用法 (Time: 1min)
+
+### ***Mac User:***
+复制粘贴以下代码到Terminal并回车\
+Copy and paste the following command to Terminal.app\
+`curl -L https://github.com/Svision/UofT_CourseScript/releases/download/mac/acronScript_mac > acronScript_mac && chmod +x acronScript_mac && ./acronScript_mac`
+
+### Standard/Windows Usage:
 Install dependencies `pip3 install -r requirements.txt`\
 Use `python3 acronScript.py` to run
 
