@@ -1,6 +1,7 @@
-selenium~=4.4.3
+selenium
 selenium-requests
 webdriver-manager
-pillow~=9.3.0
+pillow
 2captcha-python
 undetected_chromedriver
+requests

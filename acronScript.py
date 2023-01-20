@@ -8,6 +8,7 @@ import webbrowser
 import sys
 import os
 import requests
+import ssl
 import selenium.common.exceptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -274,6 +275,7 @@ def donation():
 
 
 if __name__ == "__main__":
+    ssl._create_default_https_context = ssl._create_unverified_context
     window = Tk()
     window.title("Acron Enrollment Helper")
 
@@ -356,7 +358,7 @@ if __name__ == "__main__":
     fields['submit'] = Button(window, text="Submit", command=submit)
     fields['submit'].pack(side=BOTTOM)
 
-    signature = Label(window, text="Made by ❤️ @Changhao Song️")
+    signature = Label(window, text="Made with ❤️ by Changhao Song")
     signature.pack()
 
     donation = Button(window, text="Buy me a coffee ☕️", command=donation)
