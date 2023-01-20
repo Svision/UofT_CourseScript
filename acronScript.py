@@ -72,7 +72,10 @@ def login():
         EC.url_to_be(ACORN_URL),
         EC.url_to_be(hCaptcha_URL)
     ))
+    check_captcha()
 
+
+def check_captcha():
     if driver.current_url == hCaptcha_URL:
         bypass_hCaptcha()
         Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
@@ -87,6 +90,7 @@ def login():
 def bypass_hCaptcha():
     if SOLVER_2CAPTCHA is None:
         print("Waiting manually bypass hCaptcha...")
+        messagebox.showinfo("hCAPTCHA required", "Please enter hCAPTCHA to continue")
         driver.switch_to.window(driver.current_window_handle)
     else:
         Wait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
@@ -249,10 +253,9 @@ def submit():
         SOLVER_2CAPTCHA = TwoCaptcha(API_2CAPTCHA)
         print("Solver created!")
 
+    global driver
+    driver = uc.Chrome(chrome_options=chrome_options)
     try:
-        global driver
-        driver = uc.Chrome(chrome_options=chrome_options)
-
         login()
 
         print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
@@ -270,6 +273,7 @@ def submit():
         if RETRY_TIME > 0:
             print(str(e))
             print("Retrying...")
+            driver.quit()
             RETRY_TIME -= 1
             submit()
         else:
