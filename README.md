@@ -13,17 +13,11 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ## Warning
 ***NOT INTENDED FOR ANY COMMERCIAL USE***
 
-## Usage (Time: 1min)
-### ***For Mac:***
-- ***Apple Silicon:***
-`curl -L https://github.com/Svision/UofT_CourseScript/releases/download/release/acronScript_mac > acronScript_mac && chmod +x acronScript_mac && ./acronScript_mac`
-- ***Intel Based:***
-Use standard `python3` to run
-
-### ***For Windows:***
-Use standard `python3` to run
+## Usage 用法 (Time: 5mins)
+Install dependencies `pip3 install -r requirements.txt`\
+Use `python3 acronScript.py` to run
 
 ## Future Work
 - ~~Bypass reCAPTCHA~~
 - Multiple Courses support
-- Specify Course timeslot
+- ~~Specify Course timeslot~~
