@@ -20,4 +20,4 @@ Use `python3 acronScript.py` to run
 ## Future Work
 - ~~Bypass reCAPTCHA~~
 - Multiple Courses support
-- Specify Course timeslot
+- ~~Specify Course timeslot~~
