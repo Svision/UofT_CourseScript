@@ -14,8 +14,8 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ***NOT INTENDED FOR ANY COMMERCIAL USE***
 
 ## Usage 用法 (Time: 5mins)
-`pip3 install -r requirements.txt`
-Use standard `python3 acronScript.py` to run
+Install dependencies `pip3 install -r requirements.txt`\
+Use `python3 acronScript.py` to run
 
 ## Future Work
 - ~~Bypass reCAPTCHA~~
