@@ -33,6 +33,7 @@ TARGET_SECTION_CODE = ""  # example for Full Session: "Y", options are "Y", "F",
 TARGET_COURSE_SECTION = ""
 MODIFY_TUT_MODE = False
 TARGET_TUT_SECTION_CODES = []  # TUT ["1001", "1002"]
+TARGET_LEC_SECTION_CODES = []
 API_2CAPTCHA = ""
 SOLVER_2CAPTCHA: TwoCaptcha = None
 
@@ -195,7 +196,7 @@ def get_course_info():
         total_space = meeting["totalSpace"]
         sectionNo = meeting["sectionNo"]
         display_name = meeting["displayName"]
-        if (not MODIFY_TUT_MODE and teachMethod == "LEC") or (
+        if (not MODIFY_TUT_MODE and teachMethod == "LEC" and sectionNo in TARGET_LEC_SECTION_CODES) or (
                 teachMethod == "TUT" and sectionNo in TARGET_TUT_SECTION_CODES):
             if space_available != 0:
                 print(
@@ -231,6 +232,10 @@ def submit():
     if not len(TARGET_COURSE_CODE) == 8:
         messagebox.showerror("Course Code Error", "Example course code for CSC108 in UTSG: \n\nCSC108H1")
         return
+    global TARGET_LEC_SECTION_CODES
+    if fields['specify_lec'].get() != "" or fields['specify_lec'].get() != "None":
+        TARGET_LEC_SECTION_CODES = fields['specify_lec'].get().split(',')
+
     global TARGET_SECTION_CODE
     TARGET_SECTION_CODE = selected_section.get()
 
@@ -312,6 +317,9 @@ if __name__ == "__main__":
 
     fields['course_code_label'] = Label(window, text="Course Code:")
     fields['course_code'] = EntryWithPlaceholder(window, 'CSC108H1', width=10)
+    fields['specify_lec_label'] = Label(window, text="Specify Lec Sections:")
+    fields['specify_lec_tip_label'] = Label(window, text="Code only (No 'LEC'), separated by ','")
+    fields['specify_lec'] = EntryWithPlaceholder(window, 'None', width=10)
 
     fields['tut_label'] = Label(window, text="Modify TUT Mode")
 
