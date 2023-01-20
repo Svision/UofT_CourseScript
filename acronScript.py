@@ -79,6 +79,8 @@ def login():
     if driver.current_url == hCaptcha_URL:
         bypass_hCaptcha()
         Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
+        global RETRY_TIME
+        RETRY_TIME += 1
         print("Bypass SUCCESS!")
     else:
         Wait(driver, 10).until(EC.url_to_be(ACORN_URL))
