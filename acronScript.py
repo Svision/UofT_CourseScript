@@ -69,7 +69,7 @@ def login():
     time.sleep(random.randint(1, 2))
 
     # Check login status
-    Wait(driver, 10).until(AnyEc(
+    Wait(driver, 60).until(AnyEc(
         EC.url_to_be(ACORN_URL),
         EC.url_to_be(hCaptcha_URL)
     ))
@@ -84,7 +84,7 @@ def check_captcha():
         RETRY_TIME += 1
         print("Bypass SUCCESS!")
     else:
-        Wait(driver, 10).until(EC.url_to_be(ACORN_URL))
+        Wait(driver, 60).until(EC.url_to_be(ACORN_URL))
         print("Login SUCCESS!\n")
 
 
@@ -182,7 +182,7 @@ def get_course_info():
     course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE,
                                    sessionCode=TARGET_SESSION_CODE)
     driver.get(course_url)
-    Wait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "pre")))
+    Wait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "pre")))
     content = driver.find_element(By.TAG_NAME, value="pre").text
     data = json.loads(content)
 
