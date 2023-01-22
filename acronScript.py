@@ -17,6 +17,7 @@ import undetected_chromedriver as uc
 from tkinter import *
 from tkinter import messagebox
 from tkinter.ttk import *
+from tkinter import filedialog as fd
 from helper import *
 from twocaptcha import TwoCaptcha
 
@@ -69,7 +70,7 @@ def login():
     time.sleep(random.randint(1, 2))
 
     # Check login status
-    Wait(driver, 60).until(AnyEc(
+    Wait(driver, 10).until(AnyEc(
         EC.url_to_be(ACORN_URL),
         EC.url_to_be(hCaptcha_URL)
     ))
@@ -84,7 +85,7 @@ def check_captcha():
         RETRY_TIME += 1
         print("Bypass SUCCESS!")
     else:
-        Wait(driver, 60).until(EC.url_to_be(ACORN_URL))
+        Wait(driver, 10).until(EC.url_to_be(ACORN_URL))
         print("Login SUCCESS!\n")
 
 
@@ -182,7 +183,7 @@ def get_course_info():
     course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE,
                                    sessionCode=TARGET_SESSION_CODE)
     driver.get(course_url)
-    Wait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "pre")))
+    Wait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "pre")))
     content = driver.find_element(By.TAG_NAME, value="pre").text
     data = json.loads(content)
 
@@ -293,9 +294,9 @@ if __name__ == "__main__":
 
     fields = {}
 
-    if not os.path.isfile("data.txt"):
-        with open("data.txt", 'w') as my_file:
-            pass
+    # if not os.path.isfile("data.txt"):
+    #     with open("data.txt", 'w') as my_file:
+    #         pass
 
     fields['utorid_label'] = Label(window, text="Utorid:")
     fields['utorid'] = Entry(window, width=10)
@@ -304,10 +305,10 @@ if __name__ == "__main__":
     fields['password'] = Entry(window, width=10, show='*')
 
     def load_data():
+        filename = fd.askopenfilename()
         global MODIFY_TUT_MODE
-        with open("data.txt") as f:
+        with open(filename) as f:
             data = f.readlines()
-            print(data)
             fields['utorid'].delete(0, END)
             fields['utorid'].insert(0, data[0].strip())
             fields['password'].delete(0, END)
@@ -350,7 +351,6 @@ if __name__ == "__main__":
     fields['specify_lec'] = EntryWithPlaceholder(window, 'ALL', width=10)
 
     fields['tut_label'] = Label(window, text="Modify TUT Mode")
-
 
     def toggle():
         global MODIFY_TUT_MODE
