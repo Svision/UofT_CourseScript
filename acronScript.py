@@ -7,7 +7,7 @@ import webbrowser
 
 import requests
 import ssl
-import selenium.common.exceptions
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as Wait
@@ -68,38 +68,82 @@ def login():
     time.sleep(random.randint(1, 2))
 
     # Check login status
-    Wait(driver, 60).until(AnyEc(
-        EC.url_to_be(ACORN_URL),
-        EC.url_to_be(hCaptcha_URL)
-    ))
+    try:
+        Wait(driver, 60).until(AnyEc(
+            EC.url_to_be(ACORN_URL),
+            EC.url_to_be(hCaptcha_URL)
+        ))
+    except TimeoutException:
+        print("Time out, retrying...")
+        driver.quit()
+        submit()
     check_captcha()
 
 
 def check_captcha():
     if driver.current_url == hCaptcha_URL:
         bypass_hCaptcha()
-        Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
-        global RETRY_TIME
-        RETRY_TIME += 1
+        try:
+            Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
+            script_prompt()
+        except TimeoutException:
+            print("Time out, retrying...")
+            driver.quit()
+            submit()
         print("Bypass SUCCESS!")
     else:
-        Wait(driver, 60).until(EC.url_to_be(ACORN_URL))
+        try:
+            Wait(driver, 60).until(EC.url_to_be(ACORN_URL))
+            script_prompt()
+        except TimeoutException:
+            print("Time out, retrying...")
+            driver.quit()
+            submit()
         print("Login SUCCESS!\n")
+
+
+def create_session_request(url, body, method='post'):
+    session = requests.Session()
+    cookies = driver.get_cookies()
+    for cookie in cookies:
+        session.cookies.set(cookie['name'], cookie['value'])
+    headers = {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-CA,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+        "content-type": "text/plain",
+        "sec-ch-ua": '\"Not_A Brand\";v=\"99\", \"Google Chrome\";v=\"109\", \"Chromium\";v=\"109\"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"macOS\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "x-xsrf-token": driver.get_cookie('XSRF-TOKEN')['value'],
+        "Referer": "https://acorn.utoronto.ca/sws/",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+    }
+    if method == 'post':
+        return session.post(url, headers=headers, data=body)
+    else:
+        return session.get(url, headers=headers, data=body)
 
 
 def bypass_hCaptcha():
     if SOLVER_2CAPTCHA is None:
         print("Waiting manually bypass hCaptcha...")
-        messagebox.showinfo("hCAPTCHA required", "Please enter hCAPTCHA to continue")
         driver.switch_to.window(driver.current_window_handle)
     else:
-        Wait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
+        try:
+            Wait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
+        except TimeoutException:
+            print("Time out, retrying...")
+            driver.quit()
+            submit()
         site_key_element = driver.find_element(By.TAG_NAME, "iframe")
         site_src = site_key_element.get_attribute("src")
         start_idx = site_src.index('sitekey=') + 8
         end_idx = site_src.index('&theme')
         site_key = site_src[start_idx:end_idx]
-        print('Solving ' + site_key)
+        print('Solving Captcha ' + site_key)
 
         result = SOLVER_2CAPTCHA.hcaptcha(
             sitekey=site_key,
@@ -112,78 +156,134 @@ def bypass_hCaptcha():
             s.cookies.set(cookie['name'], cookie['value'])
 
         # submit
-        session = requests.Session()
-        cookies = driver.get_cookies()
-        for cookie in cookies:
-            session.cookies.set(cookie['name'], cookie['value'])
-        headers = {
-            "accept": "application/json, text/plain, */*",
-            "accept-language": "en-CA,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
-            "content-type": "text/plain",
-            "sec-ch-ua": '\"Not_A Brand\";v=\"99\", \"Google Chrome\";v=\"109\", \"Chromium\";v=\"109\"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": "\"macOS\"",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "x-xsrf-token": driver.get_cookie('XSRF-TOKEN')['value'],
-            "Referer": "https://acorn.utoronto.ca/sws/",
-            "Referrer-Policy": "strict-origin-when-cross-origin"
-        }
         body = result['code']
-        verify = session.post("https://acorn.utoronto.ca/sws/rest/captcha/verify", headers=headers, data=body)
-        response = driver.find_element(By.CSS_SELECTOR, value="[data-hcaptcha-response]")
-        driver.execute_script(f"arguments[0].setAttribute('data-hcaptcha-response', '{result['code']}');", response)
-        submit_btn = driver.find_element(By.XPATH, value="//button[@class='btn btn-primary']")
-        submit_btn.click()
-        driver.get(ACORN_URL)
+        verify = create_session_request("https://acorn.utoronto.ca/sws/rest/captcha/verify", body)
+        if verify.status_code == 200:
+            driver.get(ACORN_URL)
+
+
+def script_prompt():
+    driver_body = driver.find_element(By.XPATH, value="/html/body")
+    driver.execute_script("arguments[0].innerText = 'Script working... DO NOT TURN OFF Chrome! Check Terminal for Detail.'", driver_body)
 
 
 def enroll_modify(sectionNo):
-    # find tab
-    type = "LEC" if not MODIFY_TUT_MODE else "TUT"
-    index = 0
-    if 1 < datetime.now().month < 9:
-        index = 1
-    course_session_url = COURSE_SESSION_URL.format(index=index)  # Currently, have Fall/Winter and Summer session tabs
-    driver.get(course_session_url)
-    search = Wait(driver, 10).until(EC.element_to_be_clickable((By.ID, "typeaheadInput")))
-    search.send_keys(TARGET_COURSE_CODE)
-    time.sleep(random.randint(1, 3))
+    session = requests.Session()
+    cookies = driver.get_cookies()
+    for cookie in cookies:
+        session.cookies.set(cookie['name'], cookie['value'])
+    headers = {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-CA,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+        "content-type": "application/json;charset=UTF-8",
+        "sec-ch-ua": '\"Not_A Brand\";v=\"99\", \"Google Chrome\";v=\"109\", \"Chromium\";v=\"109\"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"macOS\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "x-xsrf-token": driver.get_cookie('XSRF-TOKEN')['value']
+    }
+    tutorial = {}
+    lecture = {}
+    if MODIFY_TUT_MODE:
+        tutorial = {"sectionNo": f"TUT,{sectionNo}"}
+    else:
+        lecture = {"sectionNo": f"LEC,{sectionNo}"}
 
-    # find course
-    course_span = driver.find_element(By.XPATH,
-                                      value=f"//span[contains(text(), '{TARGET_COURSE_CODE} {TARGET_SECTION_CODE}')]")
-    course_span.click()
-    time.sleep(random.randint(1, 3))
+    body = {
+        "activeCourse": {
+            "course": {
+                "code": TARGET_COURSE_CODE,
+                "sessionCode": TARGET_SESSION_CODE,
+                "sectionCode": TARGET_SECTION_CODE,
+                "primaryTeachMethod": "LEC",
+                "enroled": False
+            },
+            "lecture": tutorial,
+            "tutorial": lecture,
+            "practical": {}
+        },
+        "eligRegParams": {
+            "postCode": "ASCRSHBSC",
+            "postDescription": "A&S Bachelor\\'s Degree Program",
+            "sessionCode": TARGET_SESSION_CODE,
+            "sessionDescription": "",
+            "status": "REG",
+            "assocOrgCode": "",
+            "acpDuration": "2",
+            "levelOfInstruction": "U",
+            "typeOfProgram": "BACS",
+            "subjectCode1": "SCN",
+            "designationCode1": "PGM",
+            "primaryOrgCode": "ARTSC",
+            "secondaryOrgCode": "",
+            "collaborativeOrgCode": "",
+            "adminOrgCode": "ARTSC",
+            "coSecondaryOrgCode": "",
+            "yearOfStudy": "",
+            "postAcpDuration": "2",
+            "useSws": "Y"
+        }
+    }
+    enroll = create_session_request('https://acorn.utoronto.ca/sws/rest/enrolment/course/modify', body)
+    if enroll.status_code == 200:
+        enroll_success()
+    else:
+        print(f"Enroll failed ({enroll.status_code}), retrying...")
+        print("Using UI to retry:")
+        # find tab
+        type = "LEC" if not MODIFY_TUT_MODE else "TUT"
+        index = 0
+        if 1 < datetime.now().month < 9:
+            index = 1
+        course_session_url = COURSE_SESSION_URL.format(
+            index=index)  # Currently, have Fall/Winter and Summer session tabs
+        driver.get(course_session_url)
+        search = Wait(driver, 10).until(EC.element_to_be_clickable((By.ID, "typeaheadInput")))
+        search.send_keys(TARGET_COURSE_CODE)
+        time.sleep(random.randint(1, 3))
 
-    # choose section
-    course_section = driver.find_element(By.ID, value=f"course{type}{sectionNo}")
-    course_section.click()
+        # find course
+        course_span = driver.find_element(By.XPATH,
+                                          value=f"//span[contains(text(), '{TARGET_COURSE_CODE} {TARGET_SECTION_CODE}')]")
+        course_span.click()
+        time.sleep(random.randint(1, 3))
 
-    # modify_enrol
-    modify_enrol_btn = driver.find_element(By.ID, value="enrol" if not MODIFY_TUT_MODE else "modify")
-    modify_enrol_btn.click()
-    time.sleep(random.randint(2, 4))
+        # choose section
+        course_section = driver.find_element(By.ID, value=f"course{type}{sectionNo}")
+        course_section.click()
 
-    # check enrollment
-    try:
-        driver.find_element(By.ID, f"{TARGET_COURSE_CODE}-courseBox")
-        global ENROLL_STATUS
-        ENROLL_STATUS = True
-        print("Enrollment SUCCESS!")
-        messagebox.showinfo("Donation", "SUCCESS! Buy me a coffee ☕️: https://ko-fi.com/svision")
-    except selenium.common.exceptions.NoSuchElementException:
-        print("Enroll failed, retrying...")
+        # modify_enrol
+        modify_enrol_btn = driver.find_element(By.ID, value="enrol" if not MODIFY_TUT_MODE else "modify")
+        modify_enrol_btn.click()
+        time.sleep(random.randint(2, 4))
+        try:
+            driver.find_element(By.ID, f"{TARGET_COURSE_CODE}-courseBox")
+            enroll_success()
+        except:
+            print("Enroll failed, retrying...")
+
+
+def enroll_success():
+    global ENROLL_STATUS
+    ENROLL_STATUS = True
+    print("Enrollment SUCCESS!")
+    driver.get("https://ko-fi.com/svision")
+    messagebox.showinfo("Donation", "SUCCESS! Buy me a coffee ☕️: https://ko-fi.com/svision")
 
 
 def get_course_info():
     course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE,
                                    sessionCode=TARGET_SESSION_CODE)
-    driver.get(course_url)
-    Wait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "pre")))
-    content = driver.find_element(By.TAG_NAME, value="pre").text
-    data = json.loads(content)
+    response = create_session_request(course_url, None, 'get')
+    if response.status_code == 200:
+        data = json.loads(response.text)
+    else:
+        print("hCaptcha detected!")
+        driver.get(hCaptcha_URL)
+        bypass_hCaptcha()
+        return
 
     errors = data["messages"]["errors"]
     if errors:
@@ -267,14 +367,15 @@ def submit():
                 exit(0)
             time.sleep(WAIT_TIME)
     except Exception as e:
-        if str(e) == "ERROR_WRONG_USER_KEY":
-            print("API Key error")
+        if str(e).strip() == "ERROR_WRONG_USER_KEY":
+            print("API Key is not right!")
             API_2CAPTCHA = ""
         if RETRY_TIME > 0:
             print(str(e))
             print("Retrying...")
             driver.quit()
-            RETRY_TIME -= 1
+            if str(e).strip() != "Expecting value: line 1 column 1 (char 0)":
+                RETRY_TIME -= 1
             submit()
         else:
             print(str(e))
