@@ -102,15 +102,18 @@ def check_captcha():
         print("Login SUCCESS!\n")
 
 
-def create_session_request(url, body, method='post'):
+def create_session_request(url, body, method='post', json=False):
     session = requests.Session()
     cookies = driver.get_cookies()
     for cookie in cookies:
         session.cookies.set(cookie['name'], cookie['value'])
+    content_type = 'text/plain'
+    if json:
+        content_type = 'application/json;charset=UTF-8'
     headers = {
         "accept": "application/json, text/plain, */*",
         "accept-language": "en-CA,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
-        "content-type": "text/plain",
+        "content-type": content_type,
         "sec-ch-ua": '\"Not_A Brand\";v=\"99\", \"Google Chrome\";v=\"109\", \"Chromium\";v=\"109\"',
         "sec-ch-ua-mobile": "?0",
         "sec-ch-ua-platform": "\"macOS\"",
@@ -122,6 +125,8 @@ def create_session_request(url, body, method='post'):
         "Referrer-Policy": "strict-origin-when-cross-origin"
     }
     if method == 'post':
+        if json:
+            return session.post(url, headers=headers, json=body)
         return session.post(url, headers=headers, data=body)
     else:
         return session.get(url, headers=headers, data=body)
@@ -168,22 +173,6 @@ def script_prompt():
 
 
 def enroll_modify(sectionNo):
-    session = requests.Session()
-    cookies = driver.get_cookies()
-    for cookie in cookies:
-        session.cookies.set(cookie['name'], cookie['value'])
-    headers = {
-        "accept": "application/json, text/plain, */*",
-        "accept-language": "en-CA,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
-        "content-type": "application/json;charset=UTF-8",
-        "sec-ch-ua": '\"Not_A Brand\";v=\"99\", \"Google Chrome\";v=\"109\", \"Chromium\";v=\"109\"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"macOS\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "x-xsrf-token": driver.get_cookie('XSRF-TOKEN')['value']
-    }
     tutorial = {}
     lecture = {}
     if MODIFY_TUT_MODE:
@@ -200,13 +189,13 @@ def enroll_modify(sectionNo):
                 "primaryTeachMethod": "LEC",
                 "enroled": False
             },
-            "lecture": tutorial,
-            "tutorial": lecture,
+            "lecture": lecture,
+            "tutorial": tutorial,
             "practical": {}
         },
         "eligRegParams": {
             "postCode": "ASCRSHBSC",
-            "postDescription": "A&S Bachelor\\'s Degree Program",
+            "postDescription": "A&S Bachelor's Degree Program",
             "sessionCode": TARGET_SESSION_CODE,
             "sessionDescription": "",
             "status": "REG",
@@ -226,19 +215,19 @@ def enroll_modify(sectionNo):
             "useSws": "Y"
         }
     }
-    enroll = create_session_request('https://acorn.utoronto.ca/sws/rest/enrolment/course/modify', body)
+    enroll = create_session_request('https://acorn.utoronto.ca/sws/rest/enrolment/course/modify', body, json=True)
     if enroll.status_code == 200:
         enroll_success()
     else:
+        print(enroll.text)
         print(f"Enroll failed ({enroll.status_code}), retrying...")
         print("Using UI to retry:")
         # find tab
-        type = "LEC" if not MODIFY_TUT_MODE else "TUT"
+        _type = "LEC" if not MODIFY_TUT_MODE else "TUT"
         index = 0
         if 1 < datetime.now().month < 9:
             index = 1
-        course_session_url = COURSE_SESSION_URL.format(
-            index=index)  # Currently, have Fall/Winter and Summer session tabs
+        course_session_url = COURSE_SESSION_URL.format(index=index)  # Currently, have Fall/Winter and Summer session tabs
         driver.get(course_session_url)
         search = Wait(driver, 10).until(EC.element_to_be_clickable((By.ID, "typeaheadInput")))
         search.send_keys(TARGET_COURSE_CODE)
@@ -251,7 +240,7 @@ def enroll_modify(sectionNo):
         time.sleep(random.randint(1, 3))
 
         # choose section
-        course_section = driver.find_element(By.ID, value=f"course{type}{sectionNo}")
+        course_section = driver.find_element(By.ID, value=f"course{_type}{sectionNo}")
         course_section.click()
 
         # modify_enrol
