@@ -24,7 +24,22 @@ Copy and paste the following command to Terminal.app\
 Install dependencies `pip3 install -r requirements.txt`\
 Use `python3 acronScript.py` to run
 
+## Load From Config File
+You can now load from config file. The config file have to be in the exactly format as the following:
+```
+utorid
+password
+complete_course_code
+LEC code
+TUT mode
+TUT code (leave blank if None)
+Refresh interval
+reCAPTCHA code (leave blank if None)
+``` 
+
 ## Future Work
 - ~~Bypass reCAPTCHA~~
 - Multiple Courses support
 - ~~Specify Course timeslot~~
+
+
