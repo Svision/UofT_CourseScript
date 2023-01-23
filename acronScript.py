@@ -229,6 +229,7 @@ def enroll_modify(sectionNo):
             index = 1
         course_session_url = COURSE_SESSION_URL.format(index=index)  # Currently, have Fall/Winter and Summer session tabs
         driver.get(course_session_url)
+        driver.refresh()
         search = Wait(driver, 10).until(EC.element_to_be_clickable((By.ID, "typeaheadInput")))
         search.send_keys(TARGET_COURSE_CODE)
         time.sleep(random.randint(1, 3))
