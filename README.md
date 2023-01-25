@@ -1,6 +1,7 @@
 # UofT_CourseScript
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E0F4Y96)
 ## Description
+***IT'S A FREE WEAPON FOR EVERYONE, USE AT YOUR OWN RISK!***\
 UofT Course Script is a fully free open-source script written in Python with [Selenium](https://www.selenium.dev/) (automating web applications) to help UofT students get popular courses securely.
 
 ## Motivation
@@ -10,8 +11,9 @@ This behavior is not only very unsecure to themselves but also unfair for other 
 ## Purpose
 ***This script is intended solely to provide a more fair and secure environment for UofT students' course enrollment.***
 
-## Warning
+## ATTENTION
 ***NOT INTENDED FOR ANY COMMERCIAL USE***
+> Using the scirpt might result your Utorid Account be blocked by admin!
 
 ## Usage 用法 (Time: 1min)
 
@@ -26,5 +28,6 @@ Use `python3 acronScript.py` to run
 
 ## Future Work
 - ~~Bypass reCAPTCHA~~
-- Multiple Courses support
 - ~~Specify Course timeslot~~
+- Multiple Courses support
+
