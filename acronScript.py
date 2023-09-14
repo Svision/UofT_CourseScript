@@ -35,7 +35,7 @@ API_2CAPTCHA = ""
 SOLVER_2CAPTCHA: TwoCaptcha = None
 
 ERRNO = -1
-WAIT_TIME = 5  # Tune the value as needed to bypass hCaptcha
+WAIT_TIME = 30
 ACORN_URL = "https://acorn.utoronto.ca/sws/#/"
 COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?courseCode={courseCode}&courseSessionCode={sessionCode}&postCode=ASCRSHBSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
