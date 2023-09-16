@@ -355,7 +355,7 @@ def submit():
                 window.destroy()
                 driver.quit()
                 exit(0)
-            time.sleep(WAIT_TIME)
+            time.sleep(random.uniform(max(1, WAIT_TIME - 5), WAIT_TIME + 5))
     except Exception as e:
         if str(e).strip() == "ERROR_WRONG_USER_KEY":
             print("API Key is not right!")
@@ -421,7 +421,7 @@ if __name__ == "__main__":
     fields['tut'] = EntryWithPlaceholder(window, "Enter TUT sections separate by ','", width=10)
 
     fields['wait_time_label'] = Label(window, text="Refresh interval (in sec):")
-    fields['wait_time'] = EntryWithPlaceholder(window, '5', width=10)
+    fields['wait_time'] = EntryWithPlaceholder(window, WAIT_TIME, width=10)
 
     fields['course_session_code_label'] = Label(window, text="Course Session Code:")
     fields['course_session_code_rads'] = Frame(window)
