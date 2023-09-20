@@ -2,6 +2,7 @@ import json
 import random
 import time
 from datetime import datetime
+import re
 
 import webbrowser
 
@@ -21,6 +22,7 @@ from twocaptcha import TwoCaptcha
 
 UTORID = ""
 PASSWORD = ""
+bypass_codes = []
 
 TARGET_COURSE_CODE = ""  # example for CSC108 in UTSG: "CSC108H1"
 TARGET_SESSION_CODE = f"{datetime.now().year}{datetime.now().month}"  # options are "yyyym" m is one of 1, 5, 9
@@ -36,6 +38,7 @@ SOLVER_2CAPTCHA: TwoCaptcha = None
 
 ERRNO = -1
 WAIT_TIME = 30
+BYPASS_URL = "https://bypass.utormfa.utoronto.ca/"
 ACORN_URL = "https://acorn.utoronto.ca/sws/#/"
 COURSE_URL = "https://acorn.utoronto.ca/sws/rest/enrolment/course/view?courseCode={courseCode}&courseSessionCode={sessionCode}&postCode=ASCRSHBSC&sectionCode={sectionCode}&sessionCode={sessionCode}"
 COURSE_SESSION_URL = "https://acorn.utoronto.ca/sws/#/courses/{index}"
@@ -48,58 +51,85 @@ chrome_options = Options()
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
 
-def login():
-    driver.get(ACORN_URL)
+def input_key(name: str, value: str, wait_time: int, find_type=By.ID):
+    global driver
+    block = driver.find_element(by=find_type, value=name)
+    block.send_keys(value)
+    time.sleep(wait_time)
+
+
+def proceed(name: str, wait_time: int, find_type=By.NAME):
+    global driver
+    login_btn = driver.find_element(by=find_type, value=name)
+    login_btn.click()
+    time.sleep(wait_time)
+
+
+def generate_bypass_code():
+    global driver, bypass_codes
+    generate_btn = driver.find_element(by=By.NAME, value="generate")
+    generate_btn.click()
+    # Use XPath to extract the codes
+    div_innerHTML = driver.execute_script('return document.querySelector("main .site-container").innerHTML;')
+    bypass_codes = re.findall(r'(\d{9})', div_innerHTML)
+    submit()
+
+
+def login(target_url: str):
+    global driver
+    driver.get(target_url)
     print("Logging in...")
 
-    # Input utorid
-    utorid = driver.find_element(by=By.ID, value="username")
-    utorid.send_keys(UTORID)
-    time.sleep(random.randint(1, 2))
+    print("Entering Utroid and password...")
+    input_key("username", UTORID, random.randint(1, 2))
+    input_key("password", PASSWORD, random.randint(1, 2))
+    proceed("_eventId_proceed", random.randint(1, 2))
 
-    # Input password
-    utorid = driver.find_element(by=By.ID, value="password")
-    utorid.send_keys(PASSWORD)
-    time.sleep(random.randint(1, 2))
+    duo_security = driver.find_element(by=By.ID, value='duo_iframe')
+    driver.switch_to.frame(duo_security)
 
-    # Submit
-    login_btn = driver.find_element(by=By.NAME, value="_eventId_proceed")
-    login_btn.click()
-    time.sleep(random.randint(1, 2))
-
-    # Check login status
-    try:
-        Wait(driver, 60).until(AnyEc(
-            EC.url_to_be(ACORN_URL),
-            EC.url_to_be(hCaptcha_URL)
-        ))
-    except TimeoutException:
-        print("Time out, retrying...")
-        driver.quit()
-        submit()
-    check_captcha()
-
-
-def check_captcha():
-    if driver.current_url == hCaptcha_URL:
-        bypass_hCaptcha()
-        try:
-            Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
-            script_prompt()
-        except TimeoutException:
-            print("Time out, retrying...")
-            driver.quit()
-            submit()
-        print("Bypass SUCCESS!")
+    if len(bypass_codes) == 0:
+        proceed("auth-button.positive", random.randint(1, 2), By.CLASS_NAME)
+        print("Notification has been pushed, check your mobile devices...")
+        timeout = 30
     else:
-        try:
-            Wait(driver, 60).until(EC.url_to_be(ACORN_URL))
-            script_prompt()
-        except TimeoutException:
-            print("Time out, retrying...")
-            driver.quit()
-            submit()
-        print("Login SUCCESS!\n")
+        print("Bypassing Duo Security...")
+        next_bypass_code = bypass_codes.pop()
+        print("Using bypasscode:", next_bypass_code)
+        proceed("passcode", random.randint(1, 2), By.ID)
+        input_key("passcode", next_bypass_code, random.randint(1, 2), By.NAME)
+        proceed("passcode", random.randint(1, 2), By.ID)
+        timeout = 10
+
+    try:
+        Wait(driver, timeout).until(EC.url_to_be(target_url))
+        print("Login success!")
+    except TimeoutException:
+        print('timeout, duo authentication failed...')
+        driver.quit()
+    driver.switch_to.default_content()
+
+
+# def check_captcha():
+#     if driver.current_url == hCaptcha_URL:
+#         bypass_hCaptcha()
+#         try:
+#             Wait(driver, 600).until(EC.url_to_be(ACORN_URL))
+#             script_prompt()
+#         except TimeoutException:
+#             print("Time out, retrying...")
+#             driver.quit()
+#             submit()
+#         print("Bypass SUCCESS!")
+#     else:
+#         try:
+#             Wait(driver, 60).until(EC.url_to_be(ACORN_URL))
+#             script_prompt()
+#         except TimeoutException:
+#             print("Time out, retrying...")
+#             driver.quit()
+#             submit()
+#         print("Login SUCCESS!\n")
 
 
 def create_session_request(url, body, method='post', json=False):
@@ -169,7 +199,8 @@ def bypass_hCaptcha():
 
 def script_prompt():
     driver_body = driver.find_element(By.XPATH, value="/html/body")
-    driver.execute_script("arguments[0].innerText = 'Script working... DO NOT TURN OFF Chrome! Check Terminal for Detail.'", driver_body)
+    driver.execute_script(
+        "arguments[0].innerText = 'Script working... DO NOT TURN OFF Chrome! Check Terminal for Detail.'", driver_body)
 
 
 def enroll_modify(sectionNo):
@@ -227,7 +258,8 @@ def enroll_modify(sectionNo):
         index = 0
         if 1 < datetime.now().month < 9:
             index = 1
-        course_session_url = COURSE_SESSION_URL.format(index=index)  # Currently, have Fall/Winter and Summer session tabs
+        course_session_url = COURSE_SESSION_URL.format(
+            index=index)  # Currently, have Fall/Winter and Summer session tabs
         driver.get(course_session_url)
         driver.refresh()
         search = Wait(driver, 10).until(EC.element_to_be_clickable((By.ID, "typeaheadInput")))
@@ -346,7 +378,10 @@ def submit():
     global driver
     driver = uc.Chrome(chrome_options=chrome_options)
     try:
-        login()
+        if len(bypass_codes) <= 1:
+            login(BYPASS_URL)
+            generate_bypass_code()
+        login(ACORN_URL)
 
         print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
         while True:
