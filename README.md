@@ -59,8 +59,6 @@ After generating the bypass code, your DUO-authorized mobile device will receive
 Once the initial setup is complete, the script will operate autonomously without needing DUO mobile approvals.
 
 
-Feel free to customize this sample as per your project's specific needs. Make sure to also include sections like Introduction, Installation, Contributing, and License to make your README comprehensive.
-
 ## Future Work
 - ~~Bypass reCAPTCHA~~
 - ~~Bypass DUO~~
