@@ -353,11 +353,6 @@ def submit():
         messagebox.showerror("Wait Time Error", "Wait time must be a number greater than 0")
         return
     WAIT_TIME = int(fields['wait_time'].get())
-    global TARGET_COURSE_CODE
-    TARGET_COURSE_CODE = fields['course_code'].get()
-    if not len(TARGET_COURSE_CODE) == 8:
-        messagebox.showerror("Course Code Error", "Example course code for CSC108 in UTSG: \n\nCSC108H1")
-        return
     global TARGET_LEC_SECTION_CODES
     if fields['specify_lec'].get() != "" and fields['specify_lec'].get() != "ALL":
         TARGET_LEC_SECTION_CODES = fields['specify_lec'].get().split(',')
@@ -383,14 +378,44 @@ def submit():
             generate_bypass_code()
         login(ACORN_URL)
 
-        print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
-        while True:
-            get_course_info()
-            if ENROLL_STATUS is True:
-                window.destroy()
-                driver.quit()
-                exit(0)
-            time.sleep(random.uniform(max(1, WAIT_TIME - 5), WAIT_TIME + 5))
+        global ENROLL_STATUS
+        global TARGET_COURSE_CODE
+        if selected_course_mode.get() == "Single Course":
+            TARGET_COURSE_CODE = fields['course_code'].get()
+            if TARGET_COURSE_CODE == "":
+                messagebox.showerror("Course Code Error", "Course code cannot be empty")
+                exit(-1)
+            print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
+            while True:
+                get_course_info()
+                if ENROLL_STATUS is True:
+                    window.destroy()
+                    driver.quit()
+                    exit(0)
+                time.sleep(random.uniform(max(1, WAIT_TIME - 5), WAIT_TIME + 5))
+        else:
+            num_courses = 0
+            multiple_courses = ['course_code1', 'course_code2', 'course_code3', 'course_code4', 'course_code5']
+            for course_code_field in multiple_courses:
+                if fields[course_code_field].get() != "":
+                    num_courses += 1
+            num_success_enrolled = 0
+            while True:
+                for course_code_field in multiple_courses:
+                    TARGET_COURSE_CODE = fields[course_code_field].get()
+                    if TARGET_COURSE_CODE != "":
+                        print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
+                        get_course_info()
+                        if ENROLL_STATUS is True:
+                            num_success_enrolled += 1
+                            if num_success_enrolled == num_courses:
+                                window.destroy()
+                                driver.quit()
+                                exit(0)
+                            ENROLL_STATUS = False
+                    time.sleep(random.randint(2, 4))
+                time.sleep(random.uniform(max(1, WAIT_TIME - 5), WAIT_TIME + 5))
+
     except Exception as e:
         if str(e).strip() == "ERROR_WRONG_USER_KEY":
             print("API Key is not right!")
@@ -409,6 +434,56 @@ def submit():
 
 def donation():
     webbrowser.open("https://ko-fi.com/svision")
+
+
+def update_course_mode(mode):
+    # Define the order of the elements for each mode
+    base_fields_first_half = [
+        'utorid_label',
+        'utorid',
+        'password_label',
+        'password',
+        'session_code_label',
+        'course_mode_label',
+        'course_mode_rads',
+    ]
+    base_fields_second_half = [
+        'wait_time_label',
+        'wait_time',
+        'course_session_code_label',
+        'course_session_code_rads',
+        '2captcha_label',
+        '2captcha',
+        'submit',
+        'signature',
+        'donation'
+    ]
+    single_course_fields = [
+        'course_code_label',
+        'course_code',
+        'specify_lec_label',
+        'specify_lec_tip_label',
+        'specify_lec',
+        'tut_label',
+        'tut_toggle',
+        'tut'
+    ]
+    multiple_courses_fields = [
+        'course_codes_label',
+        'course_code1',
+        'course_code2',
+        'course_code3',
+        'course_code4',
+        'course_code5'
+    ]
+    for _field in fields:
+        fields[_field].pack_forget()
+    if mode == "Single Course":
+        for _field in base_fields_first_half + single_course_fields + base_fields_second_half:
+            fields[_field].pack(anchor=W, padx=10, pady=5, fill=X)
+    else:
+        for _field in base_fields_first_half + multiple_courses_fields + base_fields_second_half:
+            fields[_field].pack(anchor=W, padx=10, pady=5, fill=X)
 
 
 if __name__ == "__main__":
@@ -430,6 +505,19 @@ if __name__ == "__main__":
     else:
         TARGET_SECTION_CODE = f'{datetime.today().year}5'
     fields['session_code_label'] = Label(window, text=f"Session Code: {TARGET_SECTION_CODE}")
+
+    # Radio buttons for course mode selection
+    fields['course_mode_label'] = Label(window, text="Enroll Mode:")
+    fields['course_mode_rads'] = Frame(window)
+    selected_course_mode = StringVar(None, "Single Course")
+    rads = [
+        Radiobutton(fields['course_mode_rads'], text='Single Course', value="Single Course",
+                    variable=selected_course_mode, command=lambda: update_course_mode("Single Course")),
+        Radiobutton(fields['course_mode_rads'], text='Multiple Courses', value="Multiple Courses",
+                    variable=selected_course_mode, command=lambda: update_course_mode("Multiple Courses"))
+    ]
+    for rad in rads:
+        rad.pack(expand=True, side=LEFT)
 
     fields['course_code_label'] = Label(window, text="Course Code:")
     fields['course_code'] = EntryWithPlaceholder(window, 'CSC108H1', width=10)
@@ -482,10 +570,19 @@ if __name__ == "__main__":
     fields['submit'] = Button(window, text="Submit", command=submit)
     fields['submit'].pack(side=BOTTOM)
 
-    signature = Label(window, text="Made with ❤️ by Changhao Song")
-    signature.pack()
+    fields['signature'] = Label(window, text="Made with ❤️ by Changhao Song")
+    fields['signature'].pack()
 
-    donation = Button(window, text="Buy me a coffee ☕️", command=donation)
-    donation.pack()
+    fields['donation'] = Button(window, text="Buy me a coffee ☕️", command=donation)
+    fields['donation'].pack()
 
+    # Multiple Course Mode
+    fields['course_codes_label'] = Label(window, text="Course Codes:")
+    fields['course_code1'] = Entry(window, width=10)
+    fields['course_code2'] = Entry(window, width=10)
+    fields['course_code3'] = Entry(window, width=10)
+    fields['course_code4'] = Entry(window, width=10)
+    fields['course_code5'] = Entry(window, width=10)
+
+    update_course_mode(selected_course_mode.get())
     window.mainloop()

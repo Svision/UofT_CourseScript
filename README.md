@@ -63,6 +63,8 @@ Once the initial setup is complete, the script will operate autonomously without
 - ~~Bypass reCAPTCHA~~
 - ~~Bypass DUO~~
 - ~~Specify Course timeslot~~
-- Multiple Courses support
+- ~~Multiple Courses support~~
+- Better UI
+
 
 
