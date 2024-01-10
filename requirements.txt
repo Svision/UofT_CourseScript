@@ -5,3 +5,4 @@ pillow
 2captcha-python
 undetected_chromedriver
 requests
+setuptools
