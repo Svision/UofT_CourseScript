@@ -70,8 +70,11 @@ def generate_bypass_code():
     generate_btn = driver.find_element(by=By.NAME, value="generate")
     generate_btn.click()
     # Use XPath to extract the codes
+    time.sleep(random.randint(2, 3))
     div_innerHTML = driver.execute_script('return document.querySelector("main .site-container").innerHTML;')
     bypass_codes = re.findall(r'(\d{9})', div_innerHTML)
+    if len(bypass_codes) != 0:
+        driver.quit()
     submit()
 
 
