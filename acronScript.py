@@ -53,6 +53,7 @@ chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
 def input_key(name: str, value: str, wait_time: int, find_type=By.ID):
     global driver
+    Wait(driver, 10).until(EC.presence_of_element_located((find_type, name)))
     block = driver.find_element(by=find_type, value=name)
     block.send_keys(value)
     time.sleep(wait_time)
@@ -60,13 +61,15 @@ def input_key(name: str, value: str, wait_time: int, find_type=By.ID):
 
 def proceed(name: str, wait_time: int, find_type=By.NAME):
     global driver
-    login_btn = driver.find_element(by=find_type, value=name)
-    login_btn.click()
+    Wait(driver, 5).until(EC.presence_of_element_located((find_type, name)))
+    btn = driver.find_element(by=find_type, value=name)
+    btn.click()
     time.sleep(wait_time)
 
 
 def generate_bypass_code():
     global driver, bypass_codes
+    Wait(driver, 10).until(EC.presence_of_element_located((By.NAME, "generate")))
     generate_btn = driver.find_element(by=By.NAME, value="generate")
     generate_btn.click()
     # Use XPath to extract the codes
@@ -86,8 +89,13 @@ def login(target_url: str):
     print("Entering Utroid and password...")
     input_key("username", UTORID, random.randint(1, 2))
     input_key("password", PASSWORD, random.randint(1, 2))
-    proceed("_eventId_proceed", random.randint(1, 2))
 
+    try:
+        proceed("_eventId_proceed", random.randint(1, 2))
+    except TimeoutException:
+        pass
+
+    Wait(driver, 10).until(EC.presence_of_element_located((By.ID, "duo_iframe")))
     duo_security = driver.find_element(by=By.ID, value='duo_iframe')
     driver.switch_to.frame(duo_security)
 
