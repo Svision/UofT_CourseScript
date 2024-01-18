@@ -296,42 +296,47 @@ def enroll_success():
 
 
 def get_course_info():
-    course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE,
-                                   sessionCode=TARGET_SESSION_CODE)
-    response = create_session_request(course_url, None, 'get')
-    if response.status_code == 200:
-        data = json.loads(response.text)
-    else:
-        print("hCaptcha detected!")
-        driver.get(hCaptcha_URL)
-        bypass_hCaptcha()
-        return
+    try:
+        course_url = COURSE_URL.format(courseCode=TARGET_COURSE_CODE, sectionCode=TARGET_SECTION_CODE,
+                                       sessionCode=TARGET_SESSION_CODE)
+        response = create_session_request(course_url, None, 'get')
+        if response.status_code == 200:
+            data = json.loads(response.text)
+        else:
+            print("hCaptcha detected!")
+            driver.get(hCaptcha_URL)
+            bypass_hCaptcha()
+            return
 
-    errors = data["messages"]["errors"]
-    if errors:
-        print("Error getting course info")
-        exit(-1)
+        errors = data["messages"]["errors"]
+        if errors:
+            print("Error getting course info")
+            exit(-1)
 
-    print(f"\n{datetime.today()}")
-    print("----------------------------")
-    meetings = data["responseObject"]["meetings"]
-    for meeting in meetings:
-        teachMethod = meeting["teachMethod"]
-        space_available = meeting["enrollmentSpaceAvailable"]
-        total_space = meeting["totalSpace"]
-        sectionNo = meeting["sectionNo"]
-        display_name = meeting["displayName"]
-        if (not MODIFY_TUT_MODE and teachMethod == "LEC" and (TARGET_LEC_SECTION_CODES == [] or
-                                                              sectionNo in TARGET_LEC_SECTION_CODES)) or (
-                teachMethod == "TUT" and sectionNo in TARGET_TUT_SECTION_CODES):
-            if space_available != 0:
-                print(
-                    f"{TARGET_COURSE_CODE} has {space_available} spaces left (total: {total_space}) for {display_name}")
-                enroll_modify(sectionNo)
-                if ENROLL_STATUS is True:
-                    return
-            else:
-                print(f"{TARGET_COURSE_CODE} has no space left for {display_name}")
+        print(f"\n{datetime.today()}")
+        print("----------------------------")
+        meetings = data["responseObject"]["meetings"]
+        for meeting in meetings:
+            teachMethod = meeting["teachMethod"]
+            space_available = meeting["enrollmentSpaceAvailable"]
+            total_space = meeting["totalSpace"]
+            sectionNo = meeting["sectionNo"]
+            display_name = meeting["displayName"]
+            if (not MODIFY_TUT_MODE and teachMethod == "LEC" and (TARGET_LEC_SECTION_CODES == [] or
+                                                                  sectionNo in TARGET_LEC_SECTION_CODES)) or (
+                    teachMethod == "TUT" and sectionNo in TARGET_TUT_SECTION_CODES):
+                if space_available != 0:
+                    print(
+                        f"{TARGET_COURSE_CODE} has {space_available} spaces left (total: {total_space}) for {display_name}")
+                    enroll_modify(sectionNo)
+                    if ENROLL_STATUS is True:
+                        return
+                else:
+                    print(f"{TARGET_COURSE_CODE} has no space left for {display_name}")
+    except Exception as e:
+        global RETRY_TIME
+        RETRY_TIME += 1
+        raise e
 
 
 def submit():
