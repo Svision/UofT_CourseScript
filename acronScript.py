@@ -405,18 +405,18 @@ def submit():
             num_courses = 0
             multiple_courses = ['course_code1', 'course_code2', 'course_code3', 'course_code4', 'course_code5']
             for course_code_field in multiple_courses:
-                if fields[course_code_field].get() != "":
+                if fields[course_code_field].get().strip() != "":
                     num_courses += 1
-            num_success_enrolled = 0
+            success_enrolled = []
             while True:
                 for course_code_field in multiple_courses:
-                    TARGET_COURSE_CODE = fields[course_code_field].get()
-                    if TARGET_COURSE_CODE != "":
+                    TARGET_COURSE_CODE = fields[course_code_field].get().strip()
+                    if TARGET_COURSE_CODE != "" and TARGET_COURSE_CODE not in success_enrolled:
                         print(f"Checking {TARGET_COURSE_CODE} for {TARGET_SESSION_CODE}...")
                         get_course_info()
                         if ENROLL_STATUS is True:
-                            num_success_enrolled += 1
-                            if num_success_enrolled == num_courses:
+                            success_enrolled.append(TARGET_COURSE_CODE)
+                            if len(success_enrolled) == num_courses:
                                 window.destroy()
                                 driver.quit()
                                 exit(0)
