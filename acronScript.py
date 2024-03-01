@@ -516,7 +516,7 @@ if __name__ == "__main__":
 
     if 8 <= datetime.today().month <= 12:
         TARGET_SECTION_CODE = f'{datetime.today().year}9'
-    elif 1 <= datetime.today().month <= 3:
+    elif 1 <= datetime.today().month <= 2:
         TARGET_SECTION_CODE = f'{datetime.today().year}1'
     else:
         TARGET_SECTION_CODE = f'{datetime.today().year}5'
