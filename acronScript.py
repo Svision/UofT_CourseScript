@@ -77,6 +77,7 @@ def generate_bypass_code():
     div_innerHTML = driver.execute_script('return document.querySelector("main .site-container").innerHTML;')
     bypass_codes = re.findall(r'(\d{9})', div_innerHTML)
     if len(bypass_codes) != 0:
+        print("Bypass codes generated:", bypass_codes)
         driver.quit()
     submit()
 
@@ -95,23 +96,28 @@ def login(target_url: str):
     except TimeoutException:
         pass
 
-    Wait(driver, 10).until(EC.presence_of_element_located((By.ID, "duo_iframe")))
-    duo_security = driver.find_element(by=By.ID, value='duo_iframe')
-    driver.switch_to.frame(duo_security)
+    Wait(driver, 10).until(EC.presence_of_element_located((By.ID, "auth-view-wrapper")))
 
     if len(bypass_codes) == 0:
-        proceed("auth-button.positive", random.randint(1, 2), By.CLASS_NAME)
+        try:
+            proceed("auth-button.positive", random.randint(1, 2), By.CLASS_NAME)
+        except Exception:
+            pass
         print("Notification has been pushed, check your mobile devices...")
         timeout = 30
     else:
         print("Bypassing Duo Security...")
+        proceed('button--link', random.randint(1, 2), By.CLASS_NAME)
         next_bypass_code = bypass_codes.pop()
         print("Using bypasscode:", next_bypass_code)
-        proceed("passcode", random.randint(1, 2), By.ID)
-        input_key("passcode", next_bypass_code, random.randint(1, 2), By.NAME)
-        proceed("passcode", random.randint(1, 2), By.ID)
+        proceed("[data-testid='test-id-bypass']", random.randint(1, 2), By.CSS_SELECTOR)
+        input_key("passcode-input", next_bypass_code, random.randint(1, 2), By.NAME)
+        proceed("[data-testid='verify-button']", random.randint(1, 2), By.CSS_SELECTOR)
+        try:
+            proceed('trust-browser-button', random.randint(1, 2), By.ID)
+        except Exception:
+            pass
         timeout = 10
-
     try:
         Wait(driver, timeout).until(EC.url_to_be(target_url))
         print("Login success!")
@@ -378,13 +384,13 @@ def submit():
     TARGET_SECTION_CODE = selected_section.get()
 
     # 2Captcha
-    global API_2CAPTCHA
-    global SOLVER_2CAPTCHA
-    if fields['2captcha'].get() != "" and fields['2captcha'].get() != "Enter API to bypass hCaptcha":
-        API_2CAPTCHA = fields['2captcha'].get()
-    if API_2CAPTCHA != "":
-        SOLVER_2CAPTCHA = TwoCaptcha(API_2CAPTCHA)
-        print("Solver created!")
+    # global API_2CAPTCHA
+    # global SOLVER_2CAPTCHA
+    # if fields['2captcha'].get() != "" and fields['2captcha'].get() != "Enter API to bypass hCaptcha":
+    #     API_2CAPTCHA = fields['2captcha'].get()
+    # if API_2CAPTCHA != "":
+    #     SOLVER_2CAPTCHA = TwoCaptcha(API_2CAPTCHA)
+    #     print("Solver created!")
 
     global driver
     driver = uc.Chrome(chrome_options=chrome_options)
@@ -468,8 +474,6 @@ def update_course_mode(mode):
         'wait_time',
         'course_session_code_label',
         'course_session_code_rads',
-        '2captcha_label',
-        '2captcha',
         'submit',
         'signature',
         'donation'
@@ -574,9 +578,6 @@ if __name__ == "__main__":
         Radiobutton(fields['course_session_code_rads'], text='S', value="S", variable=selected_section),
         Radiobutton(fields['course_session_code_rads'], text='Y', value="Y", variable=selected_section)
     ]
-
-    fields['2captcha_label'] = Label(window, text="2Captcha API Key:")
-    fields['2captcha'] = EntryWithPlaceholder(window, 'Enter API to bypass hCaptcha', width=10)
 
     for field in fields:
         fields[field].pack(anchor=W, padx=10, pady=5, fill=X)

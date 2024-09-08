@@ -60,10 +60,11 @@ Once the initial setup is complete, the script will operate autonomously without
 
 
 ## Future Work
-- ~~Bypass reCAPTCHA~~
+- ~~Bypass reCAPTCHA (no longer needed)~~
 - ~~Bypass DUO~~
 - ~~Specify Course timeslot~~
 - ~~Multiple Courses support~~
+- Support replacement courses (Drop course A if course B is available)
 - Better UI
 
 
