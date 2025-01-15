@@ -1,8 +1,9 @@
-selenium
-selenium-requests
-webdriver-manager
-pillow
-2captcha-python
-undetected_chromedriver
-requests
-setuptools
+selenium==4.9.1
+selenium-requests==2.0.3
+webdriver-manager==4.0.2
+pillow==10.2.0
+2captcha-python==1.2.2
+undetected_chromedriver==3.5.4
+requests==2.31.0
+setuptools==69.0.3
+
